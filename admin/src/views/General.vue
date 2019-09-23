@@ -4,16 +4,16 @@
     <br/>
     <div class="container">
       <div id="basic" class="box">
-        <b-field label="Имя менеджера (ФИО)">
+        <b-field label="Имя">
           <b-input type="text" v-model="name"></b-input>
         </b-field>
-        <b-field label="Текст для вставки в рекламную ссылку">
+        <b-field label="Шаблон текста рекламной ссылки">
           <b-input type="text" v-model="linkTemplate"></b-input>
         </b-field>
-        <b-field label="Приветственный текст">
+        <b-field label="Приветствие">
           <b-input type="textarea" v-model="greeting"></b-input>
         </b-field>
-        <b-field label="Ссылка для рекламы">
+        <b-field label="Рекламная ссылка">
           <b-input type="text" v-model="link" readonly></b-input>
         </b-field>
         <b-button type="is-info"

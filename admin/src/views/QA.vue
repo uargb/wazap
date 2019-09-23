@@ -28,6 +28,9 @@
             <b-field label="Описание запроса" label-position="inside">
               <b-input v-model="item.description"></b-input>
             </b-field>
+            <div class="field">
+              <b-checkbox v-model="item.show">Отображать в приветствии</b-checkbox>
+            </div>
             <b-field label="Текст" label-position="inside">
               <b-input type="textarea" v-model="item.text"></b-input>
             </b-field>
@@ -110,12 +113,16 @@ export default {
           password: this.password
         }})
         if (response.data.ok) {
-          let payload = JSON.parse(response.data.data)
+          let payload = []
+          if (response.data.data > 2) {
+            payload = JSON.parse(response.data.data)
+          }
           if (payload.length == 0) {
             this.data.push({
               loading: false,
               query: '',
               description: '',
+              show: true,
               text: '',
               image: { name: '' },
               video: { name: '' },
@@ -127,6 +134,7 @@ export default {
                 loading: false,
                 query: item.query,
                 description: item.description,
+                show: payload.show > 0,
                 text: item.text,
                 image: { name: item.image },
                 video: { name: item.video },
@@ -157,6 +165,7 @@ export default {
         loading: false,
         query: '',
         description: '',
+        show: true,
         text: '',
         image: {},
         video: {},
@@ -174,6 +183,7 @@ export default {
         loading: false,
         query: '',
         description: '',
+        show: true,
         text: '',
         image: {},
         video: {},
@@ -216,6 +226,7 @@ export default {
         data.append('index', index)
         data.append('query', this.data[index].query)
         data.append('description', this.data[index].description)
+        data.append('show', this.data[index].show ? 1 : 0)
         data.append('text', this.data[index].text)
         if (this.data[index].image instanceof File) {
           data.append('image', this.data[index].image)

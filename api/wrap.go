@@ -93,14 +93,20 @@ func wrapGetQA(user, pwd string) apiResult {
 	return apiResult{Ok: true, Data: string(qa)}
 }
 
-func wrapUpdateQa(user, pwd, index, q, dsc, text string, image, video, attachment *multipart.FileHeader) apiResult {
+func wrapUpdateQa(user, pwd, index, q, dsc, show, text string, image, video, attachment *multipart.FileHeader) apiResult {
 	realIndex, err := strconv.Atoi(index)
 	if err != nil {
 		log.Printf("while converting QA index to int: %v\n", err)
 		return apiResult{Ok: false, Message: "Неверный индекс запроса"}
 	}
 
-	ok := dbUpdateQa(user, pwd, realIndex, q, dsc, text)
+	realShow, err := strconv.Atoi(show)
+	if err != nil {
+		log.Printf("while converting QA show flag to int: %v\n", err)
+		return apiResult{Ok: false, Message: "Неверный показатель флага отображения"}
+	}
+
+	ok := dbUpdateQa(user, pwd, realIndex, q, dsc, realShow, text)
 	if !ok {
 		return apiResult{Ok: false, Message: "Ошибка при обновлении меню"}
 	}

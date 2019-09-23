@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "mime-types": "^2.1.24",
     "promise-mysql": "^4.1.0",
     "request": "^2.88.0",
     "sulla-hotfix": "^1.2.2"

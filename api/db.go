@@ -86,7 +86,7 @@ func dbGetQA(user, pwd string) (bool, []byte) {
 	return true, result["qa"].([]byte)
 }
 
-func dbUpdateQa(user, pwd string, index int, q, dsc, text string) bool {
+func dbUpdateQa(user, pwd string, index int, q, dsc string, show int, text string) bool {
 	result := make(map[string]interface{})
 	err := dbConn.QueryRowx(
 		"select qa from managers where username = ? and password = ?",
@@ -108,6 +108,7 @@ func dbUpdateQa(user, pwd string, index int, q, dsc, text string) bool {
 	node := qa[index].(map[string]interface{})
 	node["query"] = q
 	node["description"] = dsc
+	node["show"] = show
 	node["text"] = text
 	qa[index] = node
 

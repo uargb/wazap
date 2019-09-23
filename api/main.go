@@ -66,6 +66,7 @@ func main() {
 			r.FormValue("index"),
 			r.FormValue("query"),
 			r.FormValue("description"),
+			r.FormValue("show"),
 			r.FormValue("text"),
 			imageHeader, videoHeader, attachmentHeader,
 		)
