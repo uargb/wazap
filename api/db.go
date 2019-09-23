@@ -130,6 +130,42 @@ func dbUpdateQa(user, pwd string, index int, q, dsc, text string) bool {
 	return true
 }
 
+func dbAttachQa(user, pwd string, index int, kind, fname string) bool {
+	result := make(map[string]interface{})
+	err := dbConn.QueryRowx(
+		"select qa from managers where username = ? and password = ?",
+		user, pwd).MapScan(result)
+	if err != nil {
+		log.Printf("while getting QA: %v\n", err)
+		return false
+	}
+
+	var qa []interface{}
+	json.Unmarshal(result["qa"].([]byte), &qa)
+
+	node := qa[index].(map[string]interface{})
+	node[kind] = fname
+	qa[index] = node
+
+	newQa, err := json.Marshal(&qa)
+	if err != nil {
+		log.Printf("while encoding new QA: %v\n", err)
+		return false
+	}
+
+	_, err = dbConn.Exec(
+		"update managers set qa = ? where username = ? and password = ?",
+		string(newQa), user, pwd,
+	)
+
+	if err != nil {
+		log.Printf("while updating QA: %v\n", err)
+		return false
+	}
+
+	return true
+}
+
 func dbRemoveQa(user, pwd string, index int) bool {
 	result := make(map[string]interface{})
 	err := dbConn.QueryRowx(

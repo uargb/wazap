@@ -6,11 +6,14 @@
       <div class="columns is-multiline">
         <div class="column is-4" v-for="(item, index) in data" :key="index">
           <div class="box is-light">
-            <div class="buttons justify-space-between">
-              <b-tooltip label="Добавить новый пункт после этого">
-                <b-button type="is-success"
-                  icon-left="plus" @click="add(index)"></b-button>
-              </b-tooltip>
+            <div class="buttons justify-space-between has-margin-bottom-20">
+                <b-tooltip label="Добавить новый пункт">
+                  <b-button type="is-success"
+                    icon-left="arrow-left" @click="prepend(index)"></b-button>
+                  <b-button type="is-success"
+                    icon-left="arrow-right" @click="append(index)"></b-button>
+                </b-tooltip>
+
               <b-tooltip label="Удалить пункт">
                 <b-button type="is-danger"
                 icon-left="delete"
@@ -38,11 +41,6 @@
               <span class="file-name" v-if="item.image.name">
                   {{ item.image.name }}
               </span>
-              <b-button type="is-danger" v-if="item.image.name"
-                icon-left="delete"
-                class="has-margin-left-5"
-                @click="detach(index, 'image')"
-                ></b-button>
             </b-field>
             <b-field class="file">
               <b-upload v-model="item.video">
@@ -54,11 +52,6 @@
               <span class="file-name" v-if="item.video.name">
                   {{ item.video.name }}
               </span>
-              <b-button type="is-danger" v-if="item.video.name"
-                icon-left="delete"
-                class="has-margin-left-5"
-                @click="detach(index, 'video')"
-                ></b-button>
             </b-field>
             <b-field class="file">
               <b-upload v-model="item.attachment">
@@ -70,11 +63,6 @@
               <span class="file-name" v-if="item.attachment.name">
                   {{ item.attachment.name }}
               </span>
-              <b-button type="is-danger" v-if="item.attachment.name"
-                icon-left="delete"
-                class="has-margin-left-5"
-                @click="detach(index, 'attachment')"
-                ></b-button>
             </b-field>
             <b-button
               type="is-info"
@@ -123,17 +111,29 @@ export default {
         }})
         if (response.data.ok) {
           let payload = JSON.parse(response.data.data)
-          payload.forEach(item => {
+          if (payload.length == 0) {
             this.data.push({
               loading: false,
-              query: item.query,
-              description: item.description,
-              text: item.text,
-              image: { name: item.image },
-              video: { name: item.video },
-              attachment: { name: item.attachment }
+              query: '',
+              description: '',
+              text: '',
+              image: { name: '' },
+              video: { name: '' },
+              attachment: { name: '' }
             })
-          });
+          } else {
+            payload.forEach(item => {
+              this.data.push({
+                loading: false,
+                query: item.query,
+                description: item.description,
+                text: item.text,
+                image: { name: item.image },
+                video: { name: item.video },
+                attachment: { name: item.attachment }
+              })
+            })
+          }
         } else {
           this.$buefy.toast.open({
             message: response.data.message,
@@ -152,7 +152,24 @@ export default {
         this.pageLoading = false
       }
     },
-    add (index) {
+    async prepend(index) {
+      this.data.splice(index, 0, {
+        loading: false,
+        query: '',
+        description: '',
+        text: '',
+        image: {},
+        video: {},
+        attachment: {}
+      })
+
+      this.pageLoading = true
+      for (let i = index; i < this.data.length; i++) {
+        await this.save(i)
+      }
+      this.pageLoading = false
+    },
+    async append (index) {
       this.data.splice(index + 1, 0, {
         loading: false,
         query: '',
@@ -162,6 +179,7 @@ export default {
         video: {},
         attachment: {}
       })
+      await this.save(index + 1)
     },
     async remove(index) {
       this.data[index].loading = true
@@ -188,9 +206,6 @@ export default {
         })
         this.data[index].loading = false
       }
-    },
-    detach(index, element) {
-
     },
     async save (index) {
       this.data[index].loading = true

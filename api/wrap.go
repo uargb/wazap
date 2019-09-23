@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"mime/multipart"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -104,7 +106,68 @@ func wrapUpdateQa(user, pwd, index, q, dsc, text string, image, video, attachmen
 	}
 
 	if image != nil {
+		temp := strings.Split(image.Filename, ".")
+		if temp[len(temp)-1] != "png" &&
+			temp[len(temp)-1] != "jpg" &&
+			temp[len(temp)-1] != "jpeg" {
+			return apiResult{Ok: false, Message: "Неподдерживаемый формат файла"}
+		}
 
+		file, err := image.Open()
+		if err == nil {
+			f, err := os.OpenFile("./public/"+image.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+			defer f.Close()
+			if err == nil {
+				io.Copy(f, file)
+				dbAttachQa(user, pwd, realIndex, "image", image.Filename)
+			} else {
+				log.Printf("while creating file to save: %v\n", err)
+			}
+		} else {
+			log.Printf("while opening image: %v\n", err)
+		}
+	}
+
+	if video != nil {
+		temp := strings.Split(video.Filename, ".")
+		if temp[len(temp)-1] != "mp4" {
+			return apiResult{Ok: false, Message: "Неподдерживаемый формат файла"}
+		}
+
+		file, err := video.Open()
+		if err == nil {
+			f, err := os.OpenFile("./public/"+video.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+			defer f.Close()
+			if err == nil {
+				io.Copy(f, file)
+				dbAttachQa(user, pwd, realIndex, "video", video.Filename)
+			} else {
+				log.Printf("while creating file to save: %v\n", err)
+			}
+		} else {
+			log.Printf("while opening video: %v\n", err)
+		}
+	}
+
+	if attachment != nil {
+		temp := strings.Split(attachment.Filename, ".")
+		if temp[len(temp)-1] != "pdf" {
+			return apiResult{Ok: false, Message: "Неподдерживаемый формат файла"}
+		}
+
+		file, err := attachment.Open()
+		if err == nil {
+			f, err := os.OpenFile("./public/"+attachment.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+			defer f.Close()
+			if err == nil {
+				io.Copy(f, file)
+				dbAttachQa(user, pwd, realIndex, "attachment", attachment.Filename)
+			} else {
+				log.Printf("while creating file to save: %v\n", err)
+			}
+		} else {
+			log.Printf("while opening attachment: %v\n", err)
+		}
 	}
 
 	return apiResult{Ok: true}

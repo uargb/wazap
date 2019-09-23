@@ -1,3 +1,8 @@
 .vscode
+public
 admin/node_modules
 admin/dist
+session
+bot_wa/node_modules
+bot_wa/dist
+**/*.exe
