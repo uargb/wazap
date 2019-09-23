@@ -208,3 +208,29 @@ func dbRemoveQa(user, pwd string, index int) bool {
 
 	return true
 }
+
+func dbGetCostumers(user, pwd string) []map[string]string {
+	rows, err := dbConn.Queryx(
+		"select name, phone from costumers where managerId = (select id from managers where username = ? and password = ?)",
+		user, pwd)
+	if err != nil {
+		log.Printf("while getting costumers: %v\n", err)
+		return nil
+	}
+
+	temp := make(map[string]interface{})
+	result := make([]map[string]string, 0)
+	for rows.Next() {
+		err := rows.MapScan(temp)
+		if err != nil {
+			log.Printf("while getting costumers: %v\n", err)
+			return nil
+		}
+		result = append(result, map[string]string{
+			"name":  string(temp["name"].([]byte)),
+			"phone": string(temp["phone"].([]byte)),
+		})
+	}
+
+	return result
+}

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section id="menu">
     <navbar :username="username" :password="password" />
     <br />
@@ -111,13 +111,13 @@ export default {
         let response = await this.$axios.get('qa', { params: {
           username: this.username,
           password: this.password
-        }})
+        } })
         if (response.data.ok) {
           let payload = []
-          if (response.data.data > 2) {
+          if (response.data.data.length > 2) {
             payload = JSON.parse(response.data.data)
           }
-          if (payload.length == 0) {
+          if (payload.length === 0) {
             this.data.push({
               loading: false,
               query: '',
@@ -134,7 +134,7 @@ export default {
                 loading: false,
                 query: item.query,
                 description: item.description,
-                show: payload.show > 0,
+                show: item.show > 0,
                 text: item.text,
                 image: { name: item.image },
                 video: { name: item.video },
@@ -160,7 +160,7 @@ export default {
         this.pageLoading = false
       }
     },
-    async prepend(index) {
+    async prepend (index) {
       this.data.splice(index, 0, {
         loading: false,
         query: '',
@@ -191,7 +191,7 @@ export default {
       })
       await this.save(index + 1)
     },
-    async remove(index) {
+    async remove (index) {
       this.data[index].loading = true
       try {
         let response = await this.$axios.post('/qa/remove', this.$qs.stringify({
@@ -220,7 +220,7 @@ export default {
     async save (index) {
       this.data[index].loading = true
       try {
-        let data = new FormData();
+        let data = new FormData()
         data.append('username', this.username)
         data.append('password', this.password)
         data.append('index', index)
@@ -239,7 +239,7 @@ export default {
         }
 
         let response = await this.$axios.post('/qa', data, {
-          headers: {"Content-Type": "multipart/form-data"},
+          headers: { 'Content-Type': 'multipart/form-data' }
         })
         if (!response.data.ok) {
           this.$buefy.toast.open({

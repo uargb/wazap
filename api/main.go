@@ -75,6 +75,11 @@ func main() {
 	api.Post("/qa/remove", func(w http.ResponseWriter, r *http.Request) {
 		result := wrapRemoveQA(r.FormValue("username"), r.FormValue("password"), r.FormValue("index"))
 		w.Write(jsonResult(result))
+  })
+  
+  api.Get("/costumers", func(w http.ResponseWriter, r *http.Request) {
+		result := wrapGetCostumers(r.FormValue("username"), r.FormValue("password"))
+		w.Write(jsonResult(result))
 	})
 
 	log.Fatal(http.ListenAndServe(":8090", api))

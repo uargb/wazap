@@ -12,35 +12,46 @@ const dbConfig = {
 }
 
 
+function translateQuery(query: string): string {
+  return query
+}
+
 function base64_encode(file: string): string {
   var data = fs.readFileSync(file);
   return Buffer.from(data).toString('base64');
 }
 
-function start(db: mysql.Connection, client: Whatsapp) {
+
+async function start(db: mysql.Connection, client: Whatsapp) {
   client.onMessage(async message => {
     const phone = message.chatId.split('@')[0]
     let result = await db.query('select * from costumers where phone = ?', [phone])
     if (result.length == 0) {
       // зарегистирурем пользователя как нового
       let managers = await db.query('select id, name, greeting from managers')
+      
       // по умолчанию скидываем админу
-      let newManager = (await db.query('select id, greeting from managers where id = 1'))[0]  
-      managers.forEach(async (manager: any) => {
+      let manager = (await db.query('select id, greeting, qa from managers where id = 1'))[0]  
+      managers.forEach(async (m: any) => {
         if (message.body.includes(manager.name)) {
-          newManager = manager // если в сообщении есть имя менеджера - кинем ему
+          manager = m // если в сообщении есть имя менеджера - кинем ему
         }
       })
 
       await db.query(
         'insert into costumers (phone, name, managerId) values(?, ?, ?)',
-        [phone, message.sender.pushname, newManager.id]
+        [phone, message.sender.pushname, manager.id]
       )
 
-      let response = newManager.greeting
-      // todo: организовать меню
+      let response = manager.greeting + "\n\n"
+      const qa = JSON.parse(manager.qa)
+      qa.forEach((item: any) => {
+        if (item.show > 0) {
+          response += translateQuery(item.query) + ' - ' + item.description + "\n"
+        }
+      });
 
-      client.sendText(message.from, response)
+      await client.sendText(message.from, response)
       return
     }
     
@@ -49,41 +60,42 @@ function start(db: mysql.Connection, client: Whatsapp) {
       'select * from managers where id = ?',
       user.managerId)
     )[0]
-
     const qa = JSON.parse(manager.qa)
-    let selected: any
-    qa.some((item: any) => {
-      if (item.query === '<неизвестный>') {
-        selected = item
-      }
 
-      if (item.query.includes(message.body.trim())) {
-        selected = item
-        return true
-      }
+    let selected = [] // все карточки по выбранному запросу
+    let unknown: any = undefined // карточка "неопознанного" запроса
+    qa.forEach((item: any) => {
+      if (item.query === '<неизвестный>')
+        unknown = item
+
+      if (item.query.includes(message.body.trim()))
+        selected.push(item)
     })
 
-    if (selected.image) {
-      const data = 'data:' + mime.lookup(selected.image) + ';base64,' + base64_encode('./public/' + selected.image)
-      await client.sendImage(
-        message.from,
-        data,
-        selected.image,
-        selected.text
-      )
-    } else if (selected.video) {
+    if (selected.length == 0 && unknown) 
+      selected.push(unknown)
 
-    } else if (selected.attachment) {
-      const data = 'data:' + mime.lookup(selected.attachment) + ';base64,' + base64_encode('./public/' + selected.attachment)
-      await client.sendImage(
-        message.from,
-        data,
-        selected.attachment,
-        selected.text
-      )
-    } else {
-        client.sendText(message.from, selected.text)
-    }
+    selected.forEach(async (item) => {
+      let mediaData = 'data:{mime};base64,{base64}'
+      let mediaName = ''
+      if (item.image) {
+        mediaName = item.image
+        mediaData = mediaData.replace('{mime}', mime.lookup(item.image))
+        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.image))
+      } else if (item.video) {
+        mediaName = item.video
+        mediaData = mediaData.replace('{mime}', 'application/octet-stream')
+        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.video))
+      } else if (item.attachment) {
+        mediaName = item.attachment
+        mediaData = mediaData.replace('{mime}', mime.lookup(item.attachment))
+        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.attachment))
+      }
+      if (mediaName.length > 0)
+        client.sendImage(message.from, mediaData, mediaName, item.text)
+      else
+        client.sendText(message.from, item.text)
+    })
   })
 }
 

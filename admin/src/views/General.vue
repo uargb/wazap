@@ -3,7 +3,7 @@
     <navbar :username="username" :password="password"/>
     <br/>
     <div class="container">
-      <div id="basic" class="box">
+      <div class="box">
         <b-field label="Имя">
           <b-input type="text" v-model="name"></b-input>
         </b-field>

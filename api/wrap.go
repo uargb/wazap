@@ -192,3 +192,17 @@ func wrapRemoveQA(user, pwd, index string) apiResult {
 	}
 	return apiResult{Ok: true}
 }
+
+func wrapGetCostumers(user, pwd string) apiResult {
+	data := dbGetCostumers(user, pwd)
+	if data == nil {
+		return apiResult{Ok: false, Message: "Ошибка при получении клиентов"}
+	}
+
+	response, err := json.Marshal(data)
+	if err != nil {
+		return apiResult{Ok: false, Message: "Ошибка при формировании списка клиентов"}
+	}
+
+	return apiResult{Ok: true, Data: string(response)}
+}
