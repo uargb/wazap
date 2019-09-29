@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <section id="menu">
     <navbar :username="username" :password="password" />
     <br />

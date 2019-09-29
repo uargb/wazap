@@ -13,8 +13,8 @@ import router from './router'
 import store from './store'
 Vue.prototype.$qs = qs
 Vue.prototype.$axios = axios.create({
-  // baseURL: 'http://13.233.153.76:8090/',
-  baseURL: 'http://127.0.0.1:8090/',
+  baseURL: 'http://18.195.200.74:8090/',
+  // baseURL: 'http://127.0.0.1:8090/',
   timeout: 5000,
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded'

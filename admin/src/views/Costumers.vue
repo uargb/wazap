@@ -48,7 +48,7 @@ export default {
         let response = await this.$axios.get('costumers', { params: {
           username: this.username,
           password: this.password
-        }})
+        } })
         if (response.data.ok) {
           let payload = JSON.parse(response.data.data)
           payload.forEach(item => {
