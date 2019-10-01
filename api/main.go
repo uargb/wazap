@@ -44,21 +44,32 @@ type Costumer struct {
 var db *gorm.DB
 
 func main() {
-	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcpgi(%s)/%s",
+	var err error
+	db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true",
 		"admin",
 		"952368741",
 		"wazap.cvtuyrclurh0.ap-south-1.rds.amazonaws.com:3306",
 		"gym",
 	))
 	if err != nil {
-		panic("failed to connect database")
+		panic(fmt.Sprintf("failed to connect database %v", err))
 	}
 
 	db.AutoMigrate(&Manager{}, &QA{}, &Costumer{})
 
+	/* db.Create(&Manager{
+		Username: "test",
+		Password: "test",
+		Name:     "TEST",
+		Phone:    "380970966546",
+	}) */
+
 	r := gin.Default()
 
-	r.POST("/login", login)
+	az := r.Group("/:user/:pwd")
+	{
+		az.GET("/check", check)
+	}
 
 	r.Run("0.0.0.0:8090")
 }

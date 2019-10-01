@@ -2,14 +2,14 @@ package main
 
 import "github.com/gin-gonic/gin"
 
-func login(c *gin.Context) {
+func check(c *gin.Context) {
 	var manager Manager
 	db.Where("username = ? and password = ?",
-		c.PostForm("username"),
-		c.PostForm("password"),
+		c.Param("user"),
+		c.Param("pwd"),
 	).First(&manager)
 
-	if manager.ID < 0 {
+	if manager.ID <= 0 {
 		c.JSON(200, gin.H{
 			"ok":      false,
 			"message": "Неверное имя пользователя или пароль",
