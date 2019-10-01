@@ -1,50 +1,35 @@
 package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
-	"mime/multipart"
-	"net/url"
-	"os"
-	"strconv"
-	"strings"
-)
+import "github.com/gin-gonic/gin"
 
-type apiResult struct {
-	Ok      bool   `json:"ok"`
-	Message string `json:"message"`
-	Data    string `json:"data"`
-}
+func login(c *gin.Context) {
+	var manager Manager
+	db.Where("username = ? and password = ?",
+		c.PostForm("username"),
+		c.PostForm("password"),
+	).First(&manager)
 
-func wrapLogin(user, pwd string) apiResult {
-	code := dbLogin(user, pwd)
-
-	var result apiResult
-
-	switch code {
-	case -1:
-		result.Ok = false
-		result.Message = "Ошибка при работе с БД"
-		break
-	case -2:
-		result.Ok = false
-		result.Message = "Пользователь деактивирован. Обратитесь к администратору"
-		break
-	case -3:
-		result.Ok = false
-		result.Message = "Неверное имя пользователя или пароль"
-		break
-	case 0:
-		result.Ok = true
-		break
+	if manager.ID < 0 {
+		c.JSON(200, gin.H{
+			"ok":      false,
+			"message": "Неверное имя пользователя или пароль",
+		})
+		return
 	}
 
-	return result
+	if manager.Active {
+		c.JSON(200, gin.H{
+			"ok":      false,
+			"message": "Пользователь деактивирован. Обратитесь к администратору",
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"ok": true,
+		})
+	}
 }
 
-func wrapGetGeneral(user, pwd string) apiResult {
+/*func wrapGetGeneral(user, pwd string) apiResult {
 	ok, data := dbGetGeneral(user, pwd)
 
 	if !ok {
@@ -90,7 +75,12 @@ func wrapGetQA(user, pwd string) apiResult {
 		return apiResult{Ok: false, Message: "Ошибка при получении меню"}
 	}
 
-	return apiResult{Ok: true, Data: string(qa)}
+	qaData, err := json.Marshal(qa)
+	if err != nil {
+		return apiResult{Ok: false, Message: "Ошибка при упаковке меню"}
+	}
+
+	return apiResult{Ok: true, Data: string(qaData)}
 }
 
 func wrapUpdateQa(user, pwd, index, q, dsc, show, text string, image, video, attachment *multipart.FileHeader) apiResult {
@@ -206,3 +196,4 @@ func wrapGetCostumers(user, pwd string) apiResult {
 
 	return apiResult{Ok: true, Data: string(response)}
 }
+*/

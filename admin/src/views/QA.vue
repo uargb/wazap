@@ -4,74 +4,74 @@
     <br />
     <div id="menu" class="container">
       <div class="columns is-multiline">
-        <div class="column is-4" v-for="(item, index) in data" :key="index">
+        <div class="column is-4" v-for="card in cards" :key="card.id">
           <div class="box is-light">
             <div class="buttons justify-space-between has-margin-bottom-20">
                 <b-tooltip label="Добавить новый пункт">
                   <b-button type="is-success"
-                    icon-left="arrow-left" @click="prepend(index)"></b-button>
+                    icon-left="arrow-left" @click="prepend(card.id)"></b-button>
                   <b-button type="is-success"
-                    icon-left="arrow-right" @click="append(index)"></b-button>
+                    icon-left="arrow-right" @click="append(card.id)"></b-button>
                 </b-tooltip>
 
               <b-tooltip label="Удалить пункт">
                 <b-button type="is-danger"
                 icon-left="delete"
-                @click="remove(index)"
-                :loading="item.loading"
-                :disabled="item.loading"></b-button>
+                @click="remove(card.id)"
+                :loading="card.loading"
+                :disabled="card.loading"></b-button>
               </b-tooltip>
             </div>
             <b-field label="Запрос" label-position="inside">
-              <b-input v-model="item.query"></b-input>
+              <b-input v-model="card.query"></b-input>
             </b-field>
             <b-field label="Описание запроса" label-position="inside">
-              <b-input v-model="item.description"></b-input>
+              <b-input v-model="card.description"></b-input>
             </b-field>
             <div class="field">
-              <b-checkbox v-model="item.show">Отображать в приветствии</b-checkbox>
+              <b-checkbox v-model="card.show">Отображать в приветствии</b-checkbox>
             </div>
             <b-field label="Текст" label-position="inside">
-              <b-input type="textarea" v-model="item.text"></b-input>
+              <b-input type="textarea" v-model="card.text"></b-input>
             </b-field>
             <b-field class="file">
-              <b-upload v-model="item.image">
+              <b-upload v-model="card.image">
                   <a class="button is-secondary">
                       <b-icon icon="upload"></b-icon>
                       <span>Картинка</span>
                   </a>
               </b-upload>
-              <span class="file-name" v-if="item.image.name">
-                  {{ item.image.name }}
+              <span class="file-name" v-if="card.image.name">
+                  {{ card.image.name }}
               </span>
             </b-field>
             <b-field class="file">
-              <b-upload v-model="item.video">
+              <b-upload v-model="card.video">
                   <a class="button is-secondary">
                       <b-icon icon="upload"></b-icon>
                       <span>Видео</span>
                   </a>
               </b-upload>
-              <span class="file-name" v-if="item.video.name">
-                  {{ item.video.name }}
+              <span class="file-name" v-if="card.video.name">
+                  {{ card.video.name }}
               </span>
             </b-field>
             <b-field class="file">
-              <b-upload v-model="item.attachment">
+              <b-upload v-model="card.attachment">
                   <a class="button is-secondary">
                       <b-icon icon="upload"></b-icon>
                       <span>Вложение</span>
                   </a>
               </b-upload>
-              <span class="file-name" v-if="item.attachment.name">
-                  {{ item.attachment.name }}
+              <span class="file-name" v-if="card.attachment.name">
+                  {{ card.attachment.name }}
               </span>
             </b-field>
             <b-button
               type="is-info"
-              @click="save(index)"
-              :loading="item.loading"
-              :disabled="item.loading"
+              @click="save(card.id)"
+              :loading="card.loading"
+              :disabled="card.loading"
             >Сохранить</b-button>
           </div>
         </div>
@@ -94,17 +94,23 @@ export default {
     }
   },
   computed: {
-    username () {
-      return this.$store.state.username
-    },
-    password () {
-      return this.$store.state.password
-    }
+    username () { return this.$store.state.username },
+    password () { return this.$store.state.password }
   },
-  mounted () {
-    this.load()
-  },
+  mounted () { this.load() },
   methods: {
+    newCard(data) {
+      return {
+        loading: false,
+        query: ('query' in data) ? data['query'] : '',
+        description: ('description' in data) ? data['description'] : '',
+        show: true,
+        text: ('text' in data) ? data['text'] : '',
+        image: { name: ('image' in data) ? data['image'] : '' },
+        video: { name: ('video' in data) ? data['video'] : '' },
+        attachment: { name: ('attachment' in data) ? data['attachment'] : '' }
+      }
+    },
     async load () {
       this.pageLoading = true
       try {
@@ -118,28 +124,10 @@ export default {
             payload = JSON.parse(response.data.data)
           }
           if (payload.length === 0) {
-            this.data.push({
-              loading: false,
-              query: '',
-              description: '',
-              show: true,
-              text: '',
-              image: { name: '' },
-              video: { name: '' },
-              attachment: { name: '' }
-            })
+            this.data.push(this.newCard())
           } else {
-            payload.forEach(item => {
-              this.data.push({
-                loading: false,
-                query: item.query,
-                description: item.description,
-                show: item.show > 0,
-                text: item.text,
-                image: { name: item.image },
-                video: { name: item.video },
-                attachment: { name: item.attachment }
-              })
+            payload.forEach(card => {
+              this.data.push(this.newCard(card))
             })
           }
         } else {
@@ -160,47 +148,29 @@ export default {
         this.pageLoading = false
       }
     },
-    async prepend (index) {
-      this.data.splice(index, 0, {
-        loading: false,
-        query: '',
-        description: '',
-        show: true,
-        text: '',
-        image: {},
-        video: {},
-        attachment: {}
-      })
+    async prepend (id) {
+      this.data.splice(id, 0, this.newCard())
 
       this.pageLoading = true
-      for (let i = index; i < this.data.length; i++) {
+      for (let i = id; i < this.data.length; i++) {
         await this.save(i)
       }
       this.pageLoading = false
     },
-    async append (index) {
-      this.data.splice(index + 1, 0, {
-        loading: false,
-        query: '',
-        description: '',
-        show: true,
-        text: '',
-        image: {},
-        video: {},
-        attachment: {}
-      })
-      await this.save(index + 1)
+    async append (id) {
+      this.data.splice(id + 1, 0, this.newCard())
+      await this.save(id + 1)
     },
-    async remove (index) {
-      this.data[index].loading = true
+    async remove (id) {
+      this.data[id].loading = true
       try {
         let response = await this.$axios.post('/qa/remove', this.$qs.stringify({
           username: this.username,
           password: this.password,
-          index: index
+          id: id
         }))
         if (response.data.ok) {
-          this.data.splice(index, 1)
+          this.data.splice(id, 1)
         } else {
           this.$buefy.toast.open({
             message: response.data.message,
@@ -214,28 +184,17 @@ export default {
           type: 'is-warning',
           duration: 2000
         })
-        this.data[index].loading = false
+        this.data[id].loading = false
       }
     },
-    async save (index) {
-      this.data[index].loading = true
+    async save (id) {
+      this.data[id].loading = true
       try {
         let data = new FormData()
         data.append('username', this.username)
         data.append('password', this.password)
-        data.append('index', index)
-        data.append('query', this.data[index].query)
-        data.append('description', this.data[index].description)
-        data.append('show', this.data[index].show ? 1 : 0)
-        data.append('text', this.data[index].text)
-        if (this.data[index].image instanceof File) {
-          data.append('image', this.data[index].image)
-        }
-        if (this.data[index].video instanceof File) {
-          data.append('video', this.data[index].video)
-        }
-        if (this.data[index].attachment instanceof File) {
-          data.append('attachment', this.data[index].attachment)
+        for (var key in this.data) {
+          data.append(key, this.data[id][key]);
         }
 
         let response = await this.$axios.post('/qa', data, {
@@ -255,7 +214,7 @@ export default {
           duration: 2000
         })
       } finally {
-        this.data[index].loading = false
+        this.data[id].loading = false
       }
     }
   }
