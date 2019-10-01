@@ -1,86 +1,64 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
+	"fmt"
 
-	"github.com/gernest/alien"
+	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
-func middleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		w.Header().Add("Access-Control-Allow-Methods", "POST")
-		w.Header().Add("Content-Type", "application/json")
-		h.ServeHTTP(w, r)
-	})
+type Manager struct {
+	gorm.Model
+	Username     string
+	Password     string
+	Active       bool   `gorm:"default:'1'"`
+	BotPhone     string `gorm:"default:''"`
+	Name         string
+	Phone        string
+	LinkTemplate string `gorm:"default:''"`
+	Greeting     string `gorm:"default:''"`
 }
 
-func jsonResult(result apiResult) []byte {
-	str, err := json.Marshal(&result)
-	if err != nil {
-		log.Printf("while encoding result %v: %v\n", result, err)
-	}
-	return str
+type QA struct {
+	gorm.Model
+	ManagerID  int
+	Index      int
+	Query      string
+	Text       string `gorm:"default:''"`
+	Image      string `gorm:"default:''"`
+	Video      string `gorm:"default:''"`
+	Attachment string `gorm:"default:''"`
+	Next       string `gorm:"default:''"`
+	Write      string `gorm:"default:''"`
 }
+
+type Costumer struct {
+	gorm.Model
+	ManagerID int
+	Phone     string
+	Name      string
+	Fields    string
+}
+
+var db *gorm.DB
 
 func main() {
-	dbInit("wazap.cvtuyrclurh0.ap-south-1.rds.amazonaws.com:3306", "admin", "952368741", "gym")
+	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcpgi(%s)/%s",
+		"admin",
+		"952368741",
+		"wazap.cvtuyrclurh0.ap-south-1.rds.amazonaws.com:3306",
+		"gym",
+	))
+	if err != nil {
+		panic("failed to connect database")
+	}
 
-	api := alien.New()
-	api.Use(middleware)
+	db.AutoMigrate(&Manager{}, &QA{}, &Costumer{})
 
-	api.Post("/login", func(w http.ResponseWriter, r *http.Request) {
-		result := wrapLogin(r.FormValue("username"), r.FormValue("password"))
-		w.Write(jsonResult(result))
-	})
+	r := gin.Default()
 
-	api.Get("/general", func(w http.ResponseWriter, r *http.Request) {
-		result := wrapGetGeneral(r.FormValue("username"), r.FormValue("password"))
-		w.Write(jsonResult(result))
-	})
-	api.Post("/general", func(w http.ResponseWriter, r *http.Request) {
-		result := wrapUpdateGeneral(
-			r.FormValue("username"),
-			r.FormValue("password"),
-			r.FormValue("name"),
-			r.FormValue("linkTemplate"),
-			r.FormValue("greeting"),
-		)
-		w.Write(jsonResult(result))
-	})
+	r.POST("/login", login)
 
-	api.Get("/qa", func(w http.ResponseWriter, r *http.Request) {
-		result := wrapGetQA(r.FormValue("username"), r.FormValue("password"))
-		w.Write(jsonResult(result))
-	})
-	api.Post("/qa", func(w http.ResponseWriter, r *http.Request) {
-		_, imageHeader, _ := r.FormFile("image")
-		_, videoHeader, _ := r.FormFile("video")
-		_, attachmentHeader, _ := r.FormFile("attachment")
-
-		result := wrapUpdateQa(
-			r.FormValue("username"),
-			r.FormValue("password"),
-			r.FormValue("index"),
-			r.FormValue("query"),
-			r.FormValue("description"),
-			r.FormValue("show"),
-			r.FormValue("text"),
-			imageHeader, videoHeader, attachmentHeader,
-		)
-		w.Write(jsonResult(result))
-	})
-	api.Post("/qa/remove", func(w http.ResponseWriter, r *http.Request) {
-		result := wrapRemoveQA(r.FormValue("username"), r.FormValue("password"), r.FormValue("index"))
-		w.Write(jsonResult(result))
-  })
-  
-  api.Get("/costumers", func(w http.ResponseWriter, r *http.Request) {
-		result := wrapGetCostumers(r.FormValue("username"), r.FormValue("password"))
-		w.Write(jsonResult(result))
-	})
-
-	log.Fatal(http.ListenAndServe(":8090", api))
+	r.Run("0.0.0.0:8090")
 }
