@@ -6,20 +6,11 @@ import 'bulma-helpers/css/bulma-helpers.min.css'
 
 import qs from 'qs'
 
-import axios from 'axios'
-
 import App from './App.vue'
 import router from './router'
 import store from './store'
 Vue.prototype.$qs = qs
-Vue.prototype.$axios = axios.create({
-  // baseURL: 'http://18.195.200.74:8090/',
-  baseURL: 'http://127.0.0.1:8090/',
-  timeout: 5000,
-  headers: {
-    'Content-Type': 'application/x-www-form-urlencoded'
-  }
-})
+Vue.prototype.$apiBase = (login, password, url) => { return 'http://3.124.5.172:8090/' + login + '/' + password + '/' + url }
 
 Vue.use(Buefy)
 Vue.config.productionTip = false

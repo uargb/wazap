@@ -44,6 +44,12 @@ type Manager struct {
 	Costumers    []Costumer
 }
 
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+	}
+}
+
 func main() {
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true",
 		"admin",
@@ -58,18 +64,22 @@ func main() {
 	db.AutoMigrate(&QA{}, &Costumer{}, &Manager{})
 
 	r := gin.Default()
+	r.Use(corsMiddleware())
 
 	az := r.Group("/:user/:pwd")
 	{
 		az.Use(authMiddleware(db))
 
-		az.GET("/check", check(db))
+		az.POST("/check", check(db))
 
 		az.GET("/general", getGeneral(db))
 		az.PATCH("/general", patchGeneral(db))
 
 		az.GET("/qa/*id", getQA(db))
 		az.PATCH("/qa/:id", patchQA(db))
+
+		az.GET("/files", listFiles)
+		az.POST("/upload", uploadFile)
 	}
 
 	r.Run("0.0.0.0:8090")

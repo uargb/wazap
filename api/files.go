@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -35,11 +34,12 @@ func listFiles(c *gin.Context) {
 	}
 	manager := iManager.(Manager)
 
-	files, _ := filepath.Glob(fmt.Sprintf("./public/%d-*", manager.ID))
-	data, _ := json.Marshal(files)
+	ext := c.DefaultQuery("ext", "*")
+
+	files, _ := filepath.Glob(fmt.Sprintf("./public/%d-*.%s", manager.ID, ext))
 
 	c.AsciiJSON(200, gin.H{
 		"ok":   true,
-		"data": string(data),
+		"data": files,
 	})
 }

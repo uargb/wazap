@@ -22,9 +22,9 @@
 </template>
 
 <script>
+import axios from 'axios'
 export default {
   name: 'login',
-  components: {},
   data () {
     return {
       loading: false,
@@ -32,17 +32,12 @@ export default {
       password: ''
     }
   },
-  created () {
-    this.$store.commit('logout')
-  },
+  created () { this.$store.commit('logout') },
   methods: {
     async authorize () {
       this.loading = true
       try {
-        let response = await this.$axios.post('login', this.$qs.stringify({
-          username: this.username,
-          password: this.password
-        }))
+        let response = await axios.post(this.$apiBase(this.username, this.password, 'check'))
         if (response.data.ok) {
           this.$store.commit('authenticate', {
             username: this.username,

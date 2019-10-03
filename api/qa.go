@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -19,22 +18,24 @@ func getQA(db *gorm.DB) func(*gin.Context) {
 		var qas []QA
 		db.Model(&manager).Related(&qas)
 
-		var data []byte
 		if id := c.Param("id"); id != "/" {
 			pk, _ := strconv.Atoi(id[1:])
 			for _, qa := range qas {
 				if qa.ID == uint(pk) {
-					data, _ = json.Marshal(&qa)
+					c.AsciiJSON(200, gin.H{
+						"ok":   true,
+						"data": qa,
+					})
+					return
 				}
 			}
 		} else {
-			data, _ = json.Marshal(&qas)
+			c.AsciiJSON(200, gin.H{
+				"ok":   true,
+				"data": qas,
+			})
+			return
 		}
-
-		c.AsciiJSON(200, gin.H{
-			"ok":   true,
-			"data": string(data),
-		})
 	}
 }
 
@@ -89,5 +90,9 @@ func patchQA(db *gorm.DB) func(*gin.Context) {
 				}
 			}
 		}
+
+		c.AsciiJSON(200, gin.H{
+			"ok": true,
+		})
 	}
 }
