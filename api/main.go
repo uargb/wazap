@@ -8,22 +8,10 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
-type Manager struct {
-	gorm.Model
-	Username     string
-	Password     string
-	Active       bool   `gorm:"default:'1'"`
-	BotPhone     string `gorm:"default:''"`
-	Name         string
-	Phone        string
-	LinkTemplate string `gorm:"default:''"`
-	Greeting     string `gorm:"default:''"`
-}
-
+// QA describes Q&A card
 type QA struct {
 	gorm.Model
-	ManagerID  int
-	Index      int
+	ManagerID  uint
 	Query      string
 	Text       string `gorm:"default:''"`
 	Image      string `gorm:"default:''"`
@@ -33,19 +21,31 @@ type QA struct {
 	Write      string `gorm:"default:''"`
 }
 
+// Costumer describes costumer
 type Costumer struct {
 	gorm.Model
-	ManagerID int
+	ManagerID uint
 	Phone     string
 	Name      string
 	Fields    string
 }
 
-var db *gorm.DB
+// Manager describes manager
+type Manager struct {
+	gorm.Model
+	Username     string
+	Password     string
+	Active       bool `gorm:"default:'1'"`
+	Name         string
+	Phone        string
+	LinkTemplate string `gorm:"default:''"`
+	Greeting     string `gorm:"default:''"`
+	QAs          []QA
+	Costumers    []Costumer
+}
 
 func main() {
-	var err error
-	db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true",
+	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true",
 		"admin",
 		"952368741",
 		"wazap.cvtuyrclurh0.ap-south-1.rds.amazonaws.com:3306",
@@ -55,20 +55,21 @@ func main() {
 		panic(fmt.Sprintf("failed to connect database %v", err))
 	}
 
-	db.AutoMigrate(&Manager{}, &QA{}, &Costumer{})
-
-	/* db.Create(&Manager{
-		Username: "test",
-		Password: "test",
-		Name:     "TEST",
-		Phone:    "380970966546",
-	}) */
+	db.AutoMigrate(&QA{}, &Costumer{}, &Manager{})
 
 	r := gin.Default()
 
 	az := r.Group("/:user/:pwd")
 	{
-		az.GET("/check", check)
+		az.Use(authMiddleware(db))
+
+		az.GET("/check", check(db))
+
+		az.GET("/general", getGeneral(db))
+		az.PATCH("/general", patchGeneral(db))
+
+		az.GET("/qa/*id", getQA(db))
+		az.PATCH("/qa/:id", patchQA(db))
 	}
 
 	r.Run("0.0.0.0:8090")
