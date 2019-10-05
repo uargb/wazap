@@ -10,7 +10,14 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 Vue.prototype.$qs = qs
-Vue.prototype.$apiBase = (login, password, url) => { return 'http://3.124.5.172:8090/' + login + '/' + password + '/' + url }
+Vue.prototype.$apiBase = (login, password, url) => { return 'http://127.0.0.1:8090/' + login + '/' + password + '/' + url }
+Vue.prototype.$error = (self, text, duration = 5000) => {
+  self.$buefy.toast.open({
+    message: text,
+    type: 'is-danger',
+    duration: duration
+  })
+}
 
 Vue.use(Buefy)
 Vue.config.productionTip = false

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,7 @@ func getGeneral(db *gorm.DB) func(*gin.Context) {
 				"link": fmt.Sprintf(
 					"https://wa.me/%s/?text=%s",
 					admin.Phone,
-					strings.ReplaceAll(manager.LinkTemplate, "{name}", manager.Name),
+					url.QueryEscape(strings.ReplaceAll(manager.LinkTemplate, "{name}", manager.Name)),
 				),
 			},
 		})
@@ -43,6 +44,11 @@ func patchGeneral(db *gorm.DB) func(*gin.Context) {
 		}
 
 		manager := iManager.(Manager)
+
+		name, exist := c.GetPostForm("name")
+		if exist {
+			manager.Name = name
+		}
 
 		linkTemplate, exist := c.GetPostForm("linkTemplate")
 		if exist {

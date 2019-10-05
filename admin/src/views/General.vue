@@ -5,16 +5,16 @@
     <div class="container">
       <div class="box">
         <b-field label="Имя">
-          <b-input type="text" v-model="name"></b-input>
+          <b-input type="text" v-model="info.name"></b-input>
         </b-field>
         <b-field label="Шаблон текста рекламной ссылки">
-          <b-input type="text" v-model="linkTemplate"></b-input>
+          <b-input type="text" v-model="info.linkTemplate"></b-input>
         </b-field>
         <b-field label="Приветствие">
-          <b-input type="textarea" v-model="greeting"></b-input>
+          <b-input type="textarea" v-model="info.greeting"></b-input>
         </b-field>
         <b-field label="Рекламная ссылка">
-          <b-input type="text" v-model="link" readonly></b-input>
+          <b-input type="text" v-model="info.link" readonly></b-input>
         </b-field>
         <b-button type="is-info"
           @click="save"
@@ -23,94 +23,59 @@
       </div>
     </div>
     <br/>
-    <b-loading is-full-page :active="pageLoading"></b-loading>
+    <b-loading is-full-page :active="loading"></b-loading>
   </section>
 </template>
 
 <script>
+import axios from 'axios'
 import Navbar from '@/components/Navbar'
 export default {
   name: 'general',
   components: { Navbar },
   data () {
     return {
-      pageLoading: false,
       loading: false,
-      name: '',
-      linkTemplate: '',
-      greeting: '',
-      link: ''
+      info: {}
     }
   },
   computed: {
-    username () {
-      return this.$store.state.username
-    },
-    password () {
-      return this.$store.state.password
-    }
+    username () { return this.$store.state.username },
+    password () { return this.$store.state.password }
   },
   mounted () {
     this.load()
   },
   methods: {
     async load () {
-      this.pageLoading = true
+      this.loading = true
       try {
-        let response = await this.$axios.get('general', { params: {
-          username: this.username,
-          password: this.password
-        } })
+        let response = await axios.get(this.$apiBase(this.username, this.password, 'general'))
         if (response.data.ok) {
-          let payload = JSON.parse(response.data.data)
-          this.name = payload.name
-          this.linkTemplate = payload.linkTemplate
-          this.greeting = payload.greeting
-          this.link = payload.link
+          this.info = response.data.data
         } else {
-          this.$buefy.toast.open({
-            message: response.data.message,
-            type: 'is-danger',
-            duration: 2000
-          })
-          this.$router.push('/')
+          this.$error(this, response.data.message)
         }
       } catch (error) {
-        this.$buefy.toast.open({
-          message: error.message,
-          type: 'is-warning',
-          duration: 2000
-        })
-        this.$router.push('/')
+        this.$error(this, error.message)
       } finally {
-        this.pageLoading = false
+        this.loading = false
       }
     },
     async save () {
       this.loading = true
       try {
-        let response = await this.$axios.post('general', this.$qs.stringify({
-          username: this.username,
-          password: this.password,
-          name: this.name,
-          linkTemplate: this.linkTemplate,
-          greeting: this.greeting
-        }))
+        let response = await axios.post(
+          this.$apiBase(this.username, this.password, 'general'),
+          this.$qs.stringify(this.info)
+        )
         if (!response.data.ok) {
-          this.$buefy.toast.open({
-            message: response.data.message,
-            type: 'is-danger',
-            duration: 2000
-          })
+          this.$error(this, response.data.message)
         }
       } catch (error) {
-        this.$buefy.toast.open({
-          message: error.message,
-          type: 'is-warning',
-          duration: 2000
-        })
+        this.$error(this, error.message)
       } finally {
-        this.loading = false
+        this.load()
       }
     }
   }

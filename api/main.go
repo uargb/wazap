@@ -73,10 +73,12 @@ func main() {
 		az.POST("/check", check(db))
 
 		az.GET("/general", getGeneral(db))
-		az.PATCH("/general", patchGeneral(db))
+		az.POST("/general", patchGeneral(db))
 
-		az.GET("/qa/*id", getQA(db))
-		az.PATCH("/qa/:id", patchQA(db))
+		az.GET("/qa", getQA(db))
+		az.POST("/qa/create", createQA(db))
+		az.POST("/qa/modify", patchQA(db))
+		az.POST("/qa/remove", removeQA(db))
 
 		az.GET("/files", listFiles)
 		az.POST("/upload", uploadFile)

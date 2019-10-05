@@ -7,16 +7,16 @@
       <b-navbar-item tag="span">Административный кабинет менеджера</b-navbar-item>
     </template>
     <template slot="start">
-      <b-navbar-item :active="route === 'general' ? true : false"
+      <b-navbar-item :active="route === 'general'"
         tag="router-link"
         to="general">Основная информация</b-navbar-item>
-      <b-navbar-item :active="route === 'qa' ? true : false"
+      <b-navbar-item :active="route === 'qa'"
         tag="router-link"
         to="qa">Меню бота</b-navbar-item>
-      <!-- <b-navbar-item :active="route === 'plans' ? true : false"
+      <!-- <b-navbar-item :active="route === 'plans'"
         tag="router-link"
         to="plans">Тарифы</b-navbar-item> -->
-      <b-navbar-item :active="route === 'costumers' ? true : false"
+      <b-navbar-item :active="route === 'costumers'"
         tag="router-link"
         to="costumers">Клиенты</b-navbar-item>
     </template>

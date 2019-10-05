@@ -45,18 +45,10 @@ export default {
           })
           this.$router.push('general')
         } else {
-          this.$buefy.toast.open({
-            message: response.data.message,
-            type: 'is-danger',
-            duration: 2000
-          })
+          this.$error(this, response.data.message, 2000)
         }
       } catch (error) {
-        this.$buefy.toast.open({
-          message: error.message,
-          type: 'is-warning',
-          duration: 2000
-        })
+        this.$error(this, error.message, 2000)
       } finally {
         this.loading = false
       }
