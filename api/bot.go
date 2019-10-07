@@ -45,7 +45,7 @@ func botMiddleware(db *gorm.DB) gin.HandlerFunc {
 				"did": "registered",
 				"data": []gin.H{
 					{
-						"text": manager.Greeting,
+						"Text": manager.Greeting,
 					},
 				},
 			})
@@ -93,7 +93,7 @@ func botGetAnswer(db *gorm.DB) func(*gin.Context) {
 						}
 
 						if len(costumer.Fields) > 0 {
-							costumer.Fields = strings.ReplaceAll(costumer.Fields, qa.Write, "old_"+qa.Write)
+							costumer.Fields = strings.ReplaceAll(costumer.Fields, qa.Write, ":old:"+qa.Write)
 							costumer.Fields += fmt.Sprintf("&%s=%s", qa.Write, value)
 						} else {
 							costumer.Fields += fmt.Sprintf("%s=%s", qa.Write, value)
@@ -113,7 +113,7 @@ func botGetAnswer(db *gorm.DB) func(*gin.Context) {
 			db.Save(costumer)
 		} else {
 			for _, qa := range qas {
-				if qa.Query == message {
+				if strings.ToLower(qa.Query) == strings.ToLower(message) {
 					data = append(data, qa)
 
 					if len(qa.Next) > 0 {

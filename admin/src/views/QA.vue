@@ -104,7 +104,12 @@ export default {
     username () { return this.$store.state.username },
     password () { return this.$store.state.password }
   },
-  mounted () { this.load() },
+  mounted () {
+    if (this.username.length() == 0) {
+      this.$router.push('/')
+    }
+    this.load()
+  },
   methods: {
     async loadFiles () {
       let response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=jpg'))
