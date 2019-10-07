@@ -15,7 +15,7 @@ func getGeneral(db *gorm.DB) func(*gin.Context) {
 		if !ok {
 			return
 		}
-		manager := iManager.(Manager)
+		manager := iManager.(*Manager)
 
 		var admin Manager
 		db.First(&admin)
@@ -43,7 +43,7 @@ func patchGeneral(db *gorm.DB) func(*gin.Context) {
 			return
 		}
 
-		manager := iManager.(Manager)
+		manager := iManager.(*Manager)
 
 		name, exist := c.GetPostForm("name")
 		if exist {

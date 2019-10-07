@@ -1,0 +1,7 @@
+GET http://127.0.0.1:8090/bot/380978098353/answer?message=Тестовый Менеджер HTTP/1.1
+###
+GET http://127.0.0.1:8090/bot/380978098353/rename?name=Тестовый Клиент HTTP/1.1
+###
+GET http://127.0.0.1:8090/bot/380967836645/answer?message=1 HTTP/1.1
+###
+GET http://127.0.0.1:8090/bot/380967836645/answer?message=18 HTTP/1.1

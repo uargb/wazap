@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,7 +13,7 @@ func uploadFile(c *gin.Context) {
 	if !ok {
 		return
 	}
-	manager := iManager.(Manager)
+	manager := iManager.(*Manager)
 
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -32,11 +33,15 @@ func listFiles(c *gin.Context) {
 	if !ok {
 		return
 	}
-	manager := iManager.(Manager)
+	manager := iManager.(*Manager)
 
 	ext := c.DefaultQuery("ext", "*")
 
 	files, _ := filepath.Glob(fmt.Sprintf("./public/%d-*.%s", manager.ID, ext))
+	for i := range files {
+		files[i] = strings.TrimPrefix(files[i], fmt.Sprintf("public/%d-", manager.ID))
+		files[i] = strings.TrimPrefix(files[i], fmt.Sprintf("public\\%d-", manager.ID))
+	}
 
 	c.AsciiJSON(200, gin.H{
 		"ok":   true,

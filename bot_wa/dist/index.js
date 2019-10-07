@@ -37,114 +37,97 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var sulla_hotfix_1 = require("sulla-hotfix");
-var mysql = require("promise-mysql");
+var axios_1 = require("axios");
 var fs = require("fs");
 var mime = require("mime-types");
-var dbConfig = {
-    host: 'wazap.cvtuyrclurh0.ap-south-1.rds.amazonaws.com',
-    post: 3306,
-    user: 'admin',
-    password: '952368741',
-    database: 'gym'
-};
-function translateQuery(query) {
-    return query;
-}
 function base64_encode(file) {
     var data = fs.readFileSync(file);
     return Buffer.from(data).toString('base64');
 }
-function start(db, client) {
+function apiBase(phone, url) {
+    return 'http://127.0.0.1:8090/bot/' + phone + '/' + url;
+}
+function start(client) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
         return __generator(this, function (_a) {
             client.onMessage(function (message) { return __awaiter(_this, void 0, void 0, function () {
-                var phone, result, managers, manager_1, response_1, qa_1, user, manager, qa, selected, unknown;
+                var phone, response_1, error_1, error_2;
                 var _this = this;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             phone = message.chatId.split('@')[0];
-                            return [4 /*yield*/, db.query('select * from costumers where phone = ?', [phone])];
+                            _a.label = 1;
                         case 1:
-                            result = _a.sent();
-                            if (!(result.length == 0)) return [3 /*break*/, 6];
-                            return [4 /*yield*/, db.query('select id, name, greeting from managers')
-                                // по умолчанию скидываем админу
-                            ];
+                            _a.trys.push([1, 8, , 9]);
+                            return [4 /*yield*/, axios_1.default.get(apiBase(phone, 'answer?message=' + encodeURIComponent(message.body)))];
                         case 2:
-                            managers = _a.sent();
-                            return [4 /*yield*/, db.query('select id, greeting, qa from managers where id = 1')];
+                            response_1 = _a.sent();
+                            if (!response_1.data.ok) return [3 /*break*/, 7];
+                            if (!(response_1.data.did === 'registered')) return [3 /*break*/, 6];
+                            _a.label = 3;
                         case 3:
-                            manager_1 = (_a.sent())[0];
-                            managers.forEach(function (m) { return __awaiter(_this, void 0, void 0, function () {
-                                return __generator(this, function (_a) {
-                                    if (message.body.includes(manager_1.name)) {
-                                        manager_1 = m; // если в сообщении есть имя менеджера - кинем ему
-                                    }
-                                    return [2 /*return*/];
-                                });
-                            }); });
-                            return [4 /*yield*/, db.query('insert into costumers (phone, name, managerId) values(?, ?, ?)', [phone, message.sender.pushname, manager_1.id])];
+                            _a.trys.push([3, 5, , 6]);
+                            return [4 /*yield*/, axios_1.default.get(apiBase(phone, 'rename?name=' + encodeURIComponent(message.sender.pushname)))];
                         case 4:
                             _a.sent();
-                            response_1 = manager_1.greeting + "\n\n";
-                            qa_1 = JSON.parse(manager_1.qa);
-                            qa_1.forEach(function (item) {
-                                if (item.show > 0) {
-                                    response_1 += translateQuery(item.query) + ' - ' + item.description + "\n";
-                                }
-                            });
-                            return [4 /*yield*/, client.sendText(message.from, response_1)];
+                            return [3 /*break*/, 6];
                         case 5:
-                            _a.sent();
-                            return [2 /*return*/];
+                            error_1 = _a.sent();
+                            console.error(error_1);
+                            return [3 /*break*/, 6];
                         case 6:
-                            user = result[0];
-                            return [4 /*yield*/, db.query('select * from managers where id = ?', user.managerId)];
-                        case 7:
-                            manager = (_a.sent())[0];
-                            qa = JSON.parse(manager.qa);
-                            selected = [] // все карточки по выбранному запросу
-                            ;
-                            unknown = undefined // карточка "неопознанного" запроса
-                            ;
-                            qa.forEach(function (item) {
-                                if (item.query === '<неизвестный>')
-                                    unknown = item;
-                                if (item.query.includes(message.body.trim()))
-                                    selected.push(item);
-                            });
-                            if (selected.length == 0 && unknown)
-                                selected.push(unknown);
-                            selected.forEach(function (item) { return __awaiter(_this, void 0, void 0, function () {
+                            response_1.data.data.forEach(function (card) { return __awaiter(_this, void 0, void 0, function () {
                                 var mediaData, mediaName;
                                 return __generator(this, function (_a) {
-                                    mediaData = 'data:{mime};base64,{base64}';
-                                    mediaName = '';
-                                    if (item.image) {
-                                        mediaName = item.image;
-                                        mediaData = mediaData.replace('{mime}', mime.lookup(item.image));
-                                        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.image));
+                                    switch (_a.label) {
+                                        case 0:
+                                            mediaData = 'data:{mime};base64,{base64}';
+                                            mediaName = '';
+                                            if (card.Image) {
+                                                mediaName = card.Image;
+                                                mediaData = mediaData.replace('{mime}', mime.lookup(card.Image));
+                                                mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Image));
+                                            }
+                                            else if (card.Video) {
+                                                mediaName = card.Video;
+                                                mediaData = mediaData.replace('{mime}', 'application/octet-stream');
+                                                mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Video));
+                                            }
+                                            else if (card.Attachment) {
+                                                mediaName = card.Attachment;
+                                                mediaData = mediaData.replace('{mime}', mime.lookup(card.Attachment));
+                                                mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Attachment));
+                                            }
+                                            if (!(mediaName.length > 0)) return [3 /*break*/, 2];
+                                            return [4 /*yield*/, client.sendImage(message.from, mediaData, mediaName, card.Text)];
+                                        case 1:
+                                            _a.sent();
+                                            return [3 /*break*/, 4];
+                                        case 2: return [4 /*yield*/, client.sendText(message.from, card.Text)];
+                                        case 3:
+                                            _a.sent();
+                                            _a.label = 4;
+                                        case 4:
+                                            if (!card.NotifyManager) return [3 /*break*/, 6];
+                                            console.log(message.from);
+                                            console.log(response_1.data.manager.Phone + '@c.us');
+                                            return [4 /*yield*/, client.sendText(response_1.data.manager.Phone + '@c.us', JSON.stringify(response_1.data.costumer))];
+                                        case 5:
+                                            _a.sent();
+                                            _a.label = 6;
+                                        case 6: return [2 /*return*/];
                                     }
-                                    else if (item.video) {
-                                        mediaName = item.video;
-                                        mediaData = mediaData.replace('{mime}', 'application/octet-stream');
-                                        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.video));
-                                    }
-                                    else if (item.attachment) {
-                                        mediaName = item.attachment;
-                                        mediaData = mediaData.replace('{mime}', mime.lookup(item.attachment));
-                                        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.attachment));
-                                    }
-                                    if (mediaName.length > 0)
-                                        client.sendImage(message.from, mediaData, mediaName, item.text);
-                                    else
-                                        client.sendText(message.from, item.text);
-                                    return [2 /*return*/];
                                 });
                             }); });
-                            return [2 /*return*/];
+                            _a.label = 7;
+                        case 7: return [3 /*break*/, 9];
+                        case 8:
+                            error_2 = _a.sent();
+                            console.error(error_2);
+                            return [3 /*break*/, 9];
+                        case 9: return [2 /*return*/];
                     }
                 });
             }); });
@@ -152,9 +135,7 @@ function start(db, client) {
         });
     });
 }
-mysql.createConnection(dbConfig).then(function (db) {
-    sulla_hotfix_1.create().then(function (client) {
-        start(db, client);
-    }).catch(function (error) { throw error; });
+sulla_hotfix_1.create().then(function (client) {
+    start(client);
 }).catch(function (error) { return console.error(error); });
 //# sourceMappingURL=index.js.map

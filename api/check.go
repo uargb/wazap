@@ -8,9 +8,7 @@ import (
 func authMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var manager Manager
-		db.Where("username = ?",
-			c.Param("user"),
-		).First(&manager)
+		db.Where("username = ?", c.Param("user")).First(&manager)
 
 		if manager.Password != c.Param("pwd") {
 			c.JSON(200, gin.H{
@@ -28,7 +26,7 @@ func authMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("manager", manager)
+		c.Set("manager", &manager)
 	}
 }
 

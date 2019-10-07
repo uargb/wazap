@@ -1,107 +1,68 @@
 import { create, Whatsapp } from 'sulla-hotfix'
-import * as mysql from 'promise-mysql'
+import axios from 'axios'
 import * as fs from 'fs'
 import * as mime from 'mime-types'
-
-const dbConfig = {
-  host: 'wazap.cvtuyrclurh0.ap-south-1.rds.amazonaws.com',
-  post: 3306,
-  user: 'admin',
-  password: '952368741',
-  database: 'gym'
-}
-
-
-function translateQuery(query: string): string {
-  return query
-}
 
 function base64_encode(file: string): string {
   var data = fs.readFileSync(file);
   return Buffer.from(data).toString('base64');
 }
 
+function apiBase(phone: string, url: string) { 
+  return 'http://127.0.0.1:8090/bot/' + phone + '/' + url
+}
 
-async function start(db: mysql.Connection, client: Whatsapp) {
+
+async function start(client: Whatsapp) {
   client.onMessage(async message => {
     const phone = message.chatId.split('@')[0]
-    let result = await db.query('select * from costumers where phone = ?', [phone])
-    if (result.length == 0) {
-      // зарегистирурем пользователя как нового
-      let managers = await db.query('select id, name, greeting from managers')
-      
-      // по умолчанию скидываем админу
-      let manager = (await db.query('select id, greeting, qa from managers where id = 1'))[0]  
-      managers.forEach(async (m: any) => {
-        if (message.body.includes(manager.name)) {
-          manager = m // если в сообщении есть имя менеджера - кинем ему
+    try {
+      let response = await axios.get(apiBase(phone, 'answer?message=' + encodeURIComponent(message.body)))
+      if (response.data.ok) {
+        if (response.data.did === 'registered') {
+          try {
+            await axios.get(apiBase(phone, 'rename?name=' + encodeURIComponent(message.sender.pushname)))
+          } catch (error) {
+            console.error(error)
+          }
         }
-      })
 
-      await db.query(
-        'insert into costumers (phone, name, managerId) values(?, ?, ?)',
-        [phone, message.sender.pushname, manager.id]
-      )
+        response.data.data.forEach(async (card: any) => {
+          let mediaData = 'data:{mime};base64,{base64}'
+          let mediaName = ''
 
-      let response = manager.greeting + "\n\n"
-      const qa = JSON.parse(manager.qa)
-      qa.forEach((item: any) => {
-        if (item.show > 0) {
-          response += translateQuery(item.query) + ' - ' + item.description + "\n"
-        }
-      });
+          if (card.Image) {
+            mediaName = card.Image
+            mediaData = mediaData.replace('{mime}', mime.lookup(card.Image))
+            mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Image))
+          } else if (card.Video) {
+            mediaName = card.Video
+            mediaData = mediaData.replace('{mime}', 'application/octet-stream')
+            mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Video))
+          } else if (card.Attachment) {
+            mediaName = card.Attachment
+            mediaData = mediaData.replace('{mime}', mime.lookup(card.Attachment))
+            mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Attachment))
+          }
 
-      await client.sendText(message.from, response)
-      return
-    }
-    
-    const user = result[0]
-    const manager = (await db.query(
-      'select * from managers where id = ?',
-      user.managerId)
-    )[0]
-    const qa = JSON.parse(manager.qa)
+          if (mediaName.length > 0) {
+            await client.sendImage(message.from, mediaData, mediaName, card.Text)
+          } else {
+            await client.sendText(message.from, card.Text)
+          }
 
-    let selected = [] // все карточки по выбранному запросу
-    let unknown: any = undefined // карточка "неопознанного" запроса
-    qa.forEach((item: any) => {
-      if (item.query === '<неизвестный>')
-        unknown = item
-
-      if (item.query.includes(message.body.trim()))
-        selected.push(item)
-    })
-
-    if (selected.length == 0 && unknown) 
-      selected.push(unknown)
-
-    selected.forEach(async (item) => {
-      let mediaData = 'data:{mime};base64,{base64}'
-      let mediaName = ''
-      if (item.image) {
-        mediaName = item.image
-        mediaData = mediaData.replace('{mime}', mime.lookup(item.image))
-        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.image))
-      } else if (item.video) {
-        mediaName = item.video
-        mediaData = mediaData.replace('{mime}', 'application/octet-stream')
-        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.video))
-      } else if (item.attachment) {
-        mediaName = item.attachment
-        mediaData = mediaData.replace('{mime}', mime.lookup(item.attachment))
-        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + item.attachment))
+          if (card.NotifyManager) {
+            await client.sendText(response.data.manager.Phone + '@c.us', JSON.stringify(response.data.costumer))
+          }
+        })
       }
-      if (mediaName.length > 0)
-        client.sendImage(message.from, mediaData, mediaName, item.text)
-      else
-        client.sendText(message.from, item.text)
-    })
+    } catch (error) {
+      console.error(error)
+    }
   })
 }
 
 
-mysql.createConnection(dbConfig).then((db: mysql.Connection) => {
-  create().then((client: Whatsapp) => {
-    start(db, client)
-  }).catch((error: Error) => { throw error })
+create().then((client: Whatsapp) => {
+  start(client)
 }).catch((error: Error) => console.error(error))

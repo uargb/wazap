@@ -1,13 +1,15 @@
 <template>
-  <section id="menu">
+  <section id="qa">
     <navbar :username="username" :password="password" />
     <br />
-    <div id="menu" class="container">
+    <div class="container">
       <div class="columns">
         <div class="column is-12">
           <div class="box flex-row align-items-center">
-            <p class="heading has-margin-right-15">Управление</p>
-            <b-button type="is-success" icon-left="plus" @click="add()">Добавить новую карточку</b-button>
+            <p class="heading has-margin-right-15 has-margin-top-5">Управление</p>
+            <b-button class="has-margin-right-10" type="is-success" icon-left="plus" @click="add()">
+              Добавить новую карточку
+            </b-button>
           </div>
         </div>
       </div>
@@ -52,20 +54,26 @@
                 <option v-for="(attachment, index) in attachments" :key="index" :value="attachment">{{ attachment }}</option>
               </b-select>
             </b-field>
-            <b-field label="Сохранить информацию" label-position="inside">
+            <b-field label="Сохранить запрос в поле" label-position="inside">
               <b-input v-model="card.Write" :disabled="card.disabled"></b-input>
             </b-field>
+            <b-field label="Присвоить статус" label-position="inside">
+              <b-input v-model="card.NewStatus" :disabled="card.disabled"></b-input>
+            </b-field>
             <b-field label="Отправить независимо от ответа" label-position="inside">
-              <b-select expanded v-model="card.Attachment" :disabled="card.disabled">
+              <b-select expanded v-model="card.Next" :disabled="card.disabled">
                 <option value="">Отсутствует</option>
                 <option v-for="(card, index) in cards" :key="index" :value="card.ID">#{{ card.ID }}</option>
               </b-select>
             </b-field>
+            <div class="field">
+              <b-checkbox v-model="card.NotifyManager">Отправить уведомление менеджеру</b-checkbox>
+            </div>
             <b-button
               type="is-info"
               @click="save(card.ID)"
-              :loading="card.loading"
-              :disabled="card.loading || card.disabled"
+              :loading="loading"
+              :disabled="loading || card.disabled"
             >Сохранить</b-button>
           </div>
         </div>
@@ -88,7 +96,8 @@ export default {
       cards: [],
       images: [],
       videos: [],
-      attachments: []
+      attachments: [],
+      fileToUpload: {}
     }
   },
   computed: {
@@ -97,6 +106,48 @@ export default {
   },
   mounted () { this.load() },
   methods: {
+    async loadFiles () {
+      let response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=jpg'))
+      if (response.data.ok) {
+        this.images = response.data.data
+      } else {
+        this.$error(this, response.data.message)
+      }
+
+      response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=png'))
+      if (response.data.ok) {
+        if (this.images === null) {
+          this.images = []
+        }
+        this.images = this.images.concat(response.data.data)
+      } else {
+        this.$error(this, response.data.message)
+      }
+
+      response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=gif'))
+      if (response.data.ok) {
+        if (this.images === null) {
+          this.images = []
+        }
+        this.images = this.images.concat(response.data.data)
+      } else {
+        this.$error(this, response.data.message)
+      }
+
+      response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=mp4'))
+      if (response.data.ok) {
+        this.videos = response.data.data
+      } else {
+        this.$error(this, response.data.message)
+      }
+
+      response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=pdf'))
+      if (response.data.ok) {
+        this.attachments = response.data.data
+      } else {
+        this.$error(this, response.data.message)
+      }
+    },
     async load () {
       this.loading = true
       try {
@@ -106,27 +157,7 @@ export default {
         } else {
           this.$error(this, response.data.message)
         }
-
-        response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=jpg'))
-        if (response.data.ok) {
-          this.images = response.data.data
-        } else {
-          this.$error(this, response.data.message)
-        }
-
-        response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=mp4'))
-        if (response.data.ok) {
-          this.videos = response.data.data
-        } else {
-          this.$error(this, response.data.message)
-        }
-
-        response = await axios.get(this.$apiBase(this.username, this.password, 'files?ext=pdf'))
-        if (response.data.ok) {
-          this.attachments = response.data.data
-        } else {
-          this.$error(this, response.data.message)
-        }
+        await this.loadFiles()
       } catch (error) {
         this.$error(this, error.message)
       } finally {

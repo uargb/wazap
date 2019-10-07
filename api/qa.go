@@ -14,7 +14,7 @@ func getQA(db *gorm.DB) func(*gin.Context) {
 			return
 		}
 
-		manager := iManager.(Manager)
+		manager := iManager.(*Manager)
 		var qas []QA
 		db.Model(&manager).Related(&qas)
 
@@ -49,7 +49,7 @@ func createQA(db *gorm.DB) func(*gin.Context) {
 		if !ok {
 			return
 		}
-		manager := iManager.(Manager)
+		manager := iManager.(*Manager)
 
 		qa := QA{ManagerID: manager.ID}
 		db.Create(&qa)
@@ -67,7 +67,7 @@ func patchQA(db *gorm.DB) func(*gin.Context) {
 		if !ok {
 			return
 		}
-		manager := iManager.(Manager)
+		manager := iManager.(*Manager)
 
 		id, err := strconv.Atoi(c.Query("id"))
 		if err != nil {
@@ -117,6 +117,21 @@ func patchQA(db *gorm.DB) func(*gin.Context) {
 					qa.Write = write
 				}
 
+				newStatus, exist := c.GetPostForm("NewStatus")
+				if exist {
+					qa.NewStatus = newStatus
+				}
+
+				notifyManager, exist := c.GetPostForm("NotifyManager")
+				if exist {
+					if notifyManager == "true" {
+						qa.NotifyManager = true
+					} else {
+						qa.NotifyManager = false
+					}
+
+				}
+
 				db.Save(&qa)
 			}
 		}
@@ -133,7 +148,7 @@ func removeQA(db *gorm.DB) func(*gin.Context) {
 		if !ok {
 			return
 		}
-		manager := iManager.(Manager)
+		manager := iManager.(*Manager)
 
 		id, err := strconv.Atoi(c.Query("id"))
 		if err != nil {
