@@ -13,7 +13,7 @@ type QA struct {
 	gorm.Model
 	ManagerID     uint
 	Query         string
-	Text          string
+	Text          string `sql:"type:text"`
 	Image         string
 	Video         string
 	Attachment    string
@@ -30,8 +30,8 @@ type Costumer struct {
 	Phone     string
 	Name      string
 	Price     float64
-	Period    int `gorm:"default:0"`
-	Fields    string
+	Period    int    `gorm:"default:0"`
+	Fields    string `sql:"type:text"`
 	Next      uint
 	Status    string
 	Write     string
@@ -46,9 +46,17 @@ type Manager struct {
 	Name         string `gorm:"default:''"`
 	Phone        string `gorm:"default:''"`
 	LinkTemplate string `gorm:"default:''"`
-	Greeting     string `gorm:"default:''"`
+	Greeting     string `gorm:"default:''"; sql:"type:text"`
 	QAs          []QA
 	Costumers    []Costumer
+}
+
+type Mailing struct {
+	gorm.Model
+	ManagerID uint
+	Status    string
+	CardID    int
+	Done      bool `gorm:"default:'0'"`
 }
 
 func corsMiddleware() gin.HandlerFunc {
@@ -59,16 +67,17 @@ func corsMiddleware() gin.HandlerFunc {
 
 func main() {
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true",
-		"admin",
-		"952368741",
-		"wazap.cvtuyrclurh0.ap-south-1.rds.amazonaws.com:3306",
-		"gym",
+		"wazap",
+		"AwyYZZdZhcPSNXAk",
+		"13.232.119.162:3306",
+		"wazap",
 	))
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect database %v", err))
 	}
 
-	db.AutoMigrate(&QA{}, &Costumer{}, &Manager{})
+	db.AutoMigrate(&QA{}, &Costumer{}, &Manager{}, &Mailing{})
+	db.Exec("SET NAMES utf8mb4")
 
 	r := gin.Default()
 	r.Use(corsMiddleware())
@@ -79,7 +88,7 @@ func main() {
 		az.POST("/check", check(db))
 
 		az.GET("/files", listFiles)
-		az.POST("/upload", uploadFile)
+		az.POST("/upload", uploadFile(db))
 
 		az.GET("/general", getGeneral(db))
 		az.POST("/general", patchGeneral(db))
@@ -91,6 +100,12 @@ func main() {
 
 		az.GET("/costumers", getCostumers(db))
 		az.POST("/costumers/modify", patchCostumer(db))
+		az.POST("/costumers/remove", removeCostumer(db))
+		az.GET("/costumers/export", exportCostumers(db))
+		az.POST("/costumers/send", mailing(db))
+
+		az.GET("/managers", getManagers(db))
+		az.GET("/stats", getStats(db))
 	}
 
 	bot := r.Group("/bot/:phone")
@@ -98,6 +113,7 @@ func main() {
 	{
 		bot.GET("/answer", botGetAnswer(db))
 		bot.GET("/rename", botUpdateCostumerName(db))
+		bot.GET("/mailing", botGetMailing(db))
 	}
 
 	r.Run("0.0.0.0:8090")

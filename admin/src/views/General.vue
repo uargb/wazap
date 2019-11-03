@@ -1,20 +1,23 @@
 <template>
   <section id="general">
-    <navbar :username="username" :password="password"/>
+    <navbar />
     <br/>
     <div class="container">
       <div class="box">
         <b-field label="Имя">
-          <b-input type="text" v-model="info.name"></b-input>
+          <b-input type="text" v-model="info.Name"></b-input>
         </b-field>
         <b-field label="Шаблон текста рекламной ссылки">
-          <b-input type="text" v-model="info.linkTemplate"></b-input>
-        </b-field>
-        <b-field label="Приветствие">
-          <b-input type="textarea" v-model="info.greeting"></b-input>
+          <b-input type="text" v-model="info.LinkTemplate"></b-input>
         </b-field>
         <b-field label="Рекламная ссылка">
-          <b-input type="text" v-model="info.link" readonly></b-input>
+          <b-input type="text" v-model="info.Link" readonly></b-input>
+        </b-field>
+        <b-field label="Приветствие">
+          <b-input type="textarea" v-model="info.Greeting"></b-input>
+        </b-field>
+        <b-field label="Номер телефона">
+          <b-input v-model="info.Phone"></b-input>
         </b-field>
         <b-button type="is-info"
           @click="save"
@@ -44,9 +47,6 @@ export default {
     password () { return this.$store.state.password }
   },
   mounted () {
-    if (this.username.length() == 0) {
-      this.$router.push('/')
-    }
     this.load()
   },
   methods: {

@@ -1,11 +1,35 @@
 <template>
   <section id="costumers">
-    <navbar :username="username" :password="password"/>
+    <navbar />
     <br/>
     <div class="container">
+      <div class="columns">
+        <div class="column is-12">
+          <div class="box flex-row align-items-center">
+            <p class="heading has-margin-right-15 has-margin-top-5">Управление</p>
+            <b-button class="has-margin-right-10" type="is-info" icon-left="download" @click="download()">
+              Экспорт клиентов в CSV
+            </b-button>
+
+            <b-button class="has-margin-right-10" type="is-info" icon-left="send" @click="mailing.active = true">
+              Рассылка
+            </b-button>
+          </div>
+        </div>
+      </div>
       <div class="columns is-multiline">
-        <div class="column is-3" v-for="costumer in costumers" :key="costumer.ID">
+        <div class="column is-4" v-for="costumer in costumers" :key="costumer.ID">
           <div class="box">
+            <div class="buttons justify-space-between has-margin-bottom-20">
+              <div></div>
+              <b-tooltip label="Отключить клиента">
+                <b-button type="is-danger"
+                icon-left="delete"
+                @click="remove(costumer.ID)"
+                :loading="costumer.loading"
+                :disabled="costumer.loading || costumer.disabled"></b-button>
+              </b-tooltip>
+            </div>
             <b-field label="ID" label-position="inside">
               <b-input v-model="costumer.ID" disabled></b-input>
             </b-field>
@@ -16,7 +40,7 @@
               <b-input v-model="costumer.Phone" readonly></b-input>
             </b-field>
             <b-field label="Статус" label-position="inside">
-              <b-input v-model="costumer.Status" readonly></b-input>
+              <b-input v-model="costumer.Status"></b-input>
             </b-field>
             <b-field label="Данные" label-position="inside">
               <b-input v-model="costumer.Fields" type="textarea" readonly></b-input>
@@ -43,6 +67,28 @@
         </div>
       </div>
     </div>
+    <b-modal :active.sync="mailing.active" :width="640" scroll="keep" full-screen>
+      <div class="modal-card justify-center has-padding-left-30 has-padding-right-30">
+        <div>
+          <p class="title">Рассылка карточки</p>
+          <p class="subtitle">Позволяет отправить карточку сообщения всем определенному набору клиентов</p>
+          <br>
+          <b-field label="Статус получателей" label-position="inside">
+            <b-select expanded v-model="mailing.status">
+              <option value="all">Всем</option>
+              <option v-for="status in statuses" :key="status" :value="status">{{status}}</option>
+            </b-select>
+          </b-field>
+          <b-field label="ID карточки" label-position="inside">
+            <b-input v-model="mailing.card"></b-input>
+          </b-field>
+          <br>
+          <div class="buttons">
+            <b-button type="button is-success" @click="send()">Отправить как можно скорее</b-button>
+          </div>
+        </div>
+      </div>
+    </b-modal>
     <b-loading is-full-page :active="loading"></b-loading>
   </section>
 </template>
@@ -50,13 +96,20 @@
 <script>
 import axios from 'axios'
 import Navbar from '@/components/Navbar'
+var fileDownload = require('js-file-download')
 export default {
   name: 'costumers',
   components: { Navbar },
   data () {
     return {
       loading: false,
-      costumers: []
+      costumers: [],
+      statuses: [],
+      mailing: {
+        active: false,
+        status: '',
+        cardId: 0
+      }
     }
   },
   computed: {
@@ -64,9 +117,6 @@ export default {
     password () { return this.$store.state.password }
   },
   mounted () {
-    if (this.username.length() == 0) {
-      this.$router.push('/')
-    }
     this.load()
   },
   methods: {
@@ -76,6 +126,11 @@ export default {
         let response = await axios.get(this.$apiBase(this.username, this.password, 'costumers'))
         if (response.data.ok) {
           this.costumers = response.data.data
+          this.costumers.forEach(costumer => {
+            if (!this.statuses.includes(costumer.Status)) {
+              this.statuses.push(costumer.Status)
+            }
+          })
         } else {
           this.$error(this, response.data.message)
         }
@@ -104,6 +159,51 @@ export default {
         } else {
           this.$error(this, response.data.message)
         }
+      } catch (error) {
+        this.$error(this, error.message)
+      } finally {
+        this.loading = false
+      }
+    },
+    async remove (id) {
+      this.loading = true
+      try {
+        let response = await axios.post(this.$apiBase(this.username, this.password, 'costumers/remove?id=' + id))
+        if (response.data.ok) {
+          for (let i = 0; i < this.costumers.length; i++) {
+            if (this.costumers[i].ID === id) {
+              this.costumers[i].disabled = true
+              break
+            }
+          }
+        } else {
+          this.$error(this, response.data.message)
+        }
+      } catch (error) {
+        this.$error(this, error.message)
+      } finally {
+        this.loading = false
+      }
+    },
+    async download () {
+      this.loading = true
+      try {
+        let response = await axios.get(this.$apiBase(this.username, this.password, 'costumers/export'))
+        fileDownload(response.data, 'costumers.csv')
+      } catch (error) {
+        this.$error(this, error.message)
+      } finally {
+        this.loading = false
+      }
+    },
+    async send () {
+      this.loading = true
+      try {
+        let response = await axios.post(
+          this.$apiBase(this.username, this.password, 'costumers/send'),
+          this.$qs.stringify(this.mailing)
+        )
+        this.mailing.active = false
       } catch (error) {
         this.$error(this, error.message)
       } finally {

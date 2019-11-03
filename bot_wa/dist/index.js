@@ -35,11 +35,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var sulla_hotfix_1 = require("sulla-hotfix");
-var axios_1 = require("axios");
-var fs = require("fs");
-var mime = require("mime-types");
+var axios_1 = __importDefault(require("axios"));
+var fs = __importStar(require("fs"));
+var mime = __importStar(require("mime-types"));
+var qs = require('qs');
 function base64_encode(file) {
     var data = fs.readFileSync(file);
     return Buffer.from(data).toString('base64');
@@ -47,20 +58,84 @@ function base64_encode(file) {
 function apiBase(phone, url) {
     return 'http://127.0.0.1:8090/bot/' + phone + '/' + url;
 }
+function mailingUpdates(client) {
+    return __awaiter(this, void 0, void 0, function () {
+        var response, card_1, mediaData_1, mediaName_1, error_1;
+        var _this = this;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, 3, 4]);
+                    return [4 /*yield*/, axios_1.default.get(apiBase("0", 'mailing'))];
+                case 1:
+                    response = _a.sent();
+                    if (response.data.ok) {
+                        card_1 = response.data.data.card;
+                        mediaData_1 = 'data:{mime};base64,{base64}';
+                        mediaName_1 = '';
+                        if (card_1.Image) {
+                            mediaName_1 = card_1.Image;
+                            mediaData_1 = mediaData_1.replace('{mime}', mime.lookup(card_1.Image));
+                            mediaData_1 = mediaData_1.replace('{base64}', base64_encode('./public/' + card_1.ManagerID + '-' + card_1.Image));
+                        }
+                        else if (card_1.Video) {
+                            mediaName_1 = card_1.Video;
+                            mediaData_1 = mediaData_1.replace('{mime}', mime.lookup(card_1.Video));
+                            mediaData_1 = mediaData_1.replace('{base64}', base64_encode('./public/' + card_1.ManagerID + '-' + card_1.Video));
+                        }
+                        else if (card_1.Attachment) {
+                            mediaName_1 = card_1.Attachment;
+                            mediaData_1 = mediaData_1.replace('{mime}', mime.lookup(card_1.Attachment));
+                            mediaData_1 = mediaData_1.replace('{base64}', base64_encode('./public/' + card_1.ManagerID + '-' + card_1.Attachment));
+                        }
+                        response.data.data.phones.forEach(function (phone) { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        if (!(mediaName_1.length > 0)) return [3 /*break*/, 2];
+                                        return [4 /*yield*/, client.sendFile(phone + '@c.us', mediaData_1, mediaName_1, card_1.Text)];
+                                    case 1:
+                                        _a.sent();
+                                        return [3 /*break*/, 4];
+                                    case 2: return [4 /*yield*/, client.sendText(phone + '@c.us', card_1.Text)];
+                                    case 3:
+                                        _a.sent();
+                                        _a.label = 4;
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                    }
+                    return [3 /*break*/, 4];
+                case 2:
+                    error_1 = _a.sent();
+                    console.error(error_1);
+                    return [3 /*break*/, 4];
+                case 3:
+                    setTimeout(mailingUpdates, 10000, client);
+                    return [7 /*endfinally*/];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
 function start(client) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
         return __generator(this, function (_a) {
             client.onMessage(function (message) { return __awaiter(_this, void 0, void 0, function () {
-                var phone, response_1, error_1, error_2;
+                var phone, response_1, error_2, error_3;
                 var _this = this;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            phone = message.chatId.split('@')[0];
+                            phone = message.from.split('@')[0];
                             _a.label = 1;
                         case 1:
                             _a.trys.push([1, 8, , 9]);
+                            if (message.body === undefined) {
+                                console.log(message);
+                            }
                             return [4 /*yield*/, axios_1.default.get(apiBase(phone, 'answer?message=' + encodeURIComponent(message.body)))];
                         case 2:
                             response_1 = _a.sent();
@@ -74,12 +149,12 @@ function start(client) {
                             _a.sent();
                             return [3 /*break*/, 6];
                         case 5:
-                            error_1 = _a.sent();
-                            console.error(error_1);
+                            error_2 = _a.sent();
+                            console.error(error_2);
                             return [3 /*break*/, 6];
                         case 6:
                             response_1.data.data.forEach(function (card) { return __awaiter(_this, void 0, void 0, function () {
-                                var mediaData, mediaName;
+                                var mediaData, mediaName, fields, data, field;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
@@ -92,7 +167,7 @@ function start(client) {
                                             }
                                             else if (card.Video) {
                                                 mediaName = card.Video;
-                                                mediaData = mediaData.replace('{mime}', 'application/octet-stream');
+                                                mediaData = mediaData.replace('{mime}', mime.lookup(card.Video));
                                                 mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Video));
                                             }
                                             else if (card.Attachment) {
@@ -101,7 +176,7 @@ function start(client) {
                                                 mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Attachment));
                                             }
                                             if (!(mediaName.length > 0)) return [3 /*break*/, 2];
-                                            return [4 /*yield*/, client.sendImage(message.from, mediaData, mediaName, card.Text)];
+                                            return [4 /*yield*/, client.sendFile(message.from, mediaData, mediaName, card.Text)];
                                         case 1:
                                             _a.sent();
                                             return [3 /*break*/, 4];
@@ -111,9 +186,16 @@ function start(client) {
                                             _a.label = 4;
                                         case 4:
                                             if (!card.NotifyManager) return [3 /*break*/, 6];
-                                            console.log(message.from);
-                                            console.log(response_1.data.manager.Phone + '@c.us');
-                                            return [4 /*yield*/, client.sendText(response_1.data.manager.Phone + '@c.us', JSON.stringify(response_1.data.costumer))];
+                                            fields = qs.parse(response_1.data.costumer.Fields);
+                                            data = 'Имя: ' + response_1.data.costumer.Name + '\n';
+                                            data += 'Телефон: ' + response_1.data.costumer.Phone + '\n';
+                                            for (field in fields) {
+                                                if (field.includes('old')) {
+                                                    return [2 /*return*/];
+                                                }
+                                                data += field + ': ' + fields[field] + '\n';
+                                            }
+                                            return [4 /*yield*/, client.sendText(response_1.data.manager.Phone + '@c.us', data)];
                                         case 5:
                                             _a.sent();
                                             _a.label = 6;
@@ -124,8 +206,8 @@ function start(client) {
                             _a.label = 7;
                         case 7: return [3 /*break*/, 9];
                         case 8:
-                            error_2 = _a.sent();
-                            console.error(error_2);
+                            error_3 = _a.sent();
+                            console.error(error_3);
                             return [3 /*break*/, 9];
                         case 9: return [2 /*return*/];
                     }
@@ -136,6 +218,7 @@ function start(client) {
     });
 }
 sulla_hotfix_1.create().then(function (client) {
+    // mailingUpdates(client)
     start(client);
 }).catch(function (error) { return console.error(error); });
 //# sourceMappingURL=index.js.map

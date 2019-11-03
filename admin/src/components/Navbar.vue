@@ -11,12 +11,15 @@
         <b-navbar-item :active="route === 'general'"
           tag="router-link"
           to="general">Основная информация</b-navbar-item>
-        <b-navbar-item :active="route === 'qa'"
+        <b-navbar-item :active="route === 'qa'" v-show="username !== 'admin'"
           tag="router-link"
           to="qa">Меню бота</b-navbar-item>
         <b-navbar-item :active="route === 'costumers'"
           tag="router-link"
           to="costumers">Клиенты</b-navbar-item>
+        <b-navbar-item :active="route === 'stats'" v-show="username === 'admin'"
+          tag="router-link"
+          to="stats">Статистика</b-navbar-item>
       </template>
 
       <template slot="end">
@@ -89,14 +92,19 @@ export default {
     username () { return this.$store.state.username },
     password () { return this.$store.state.password }
   },
+  mounted () {
+    if (this.username.length === 0) {
+      this.$router.push('/')
+    }
+  },
   methods: {
     deleteDropFile (index) {
       this.dropFiles.splice(index, 1)
     },
     async uploadFiles () {
       this.fileUploading = true
-      try {
-        this.dropFiles.forEach(async file => {
+      this.dropFiles.forEach(async file => {
+        try {
           let formData = new FormData()
           formData.append('file', file)
           let response = await axios.post(
@@ -109,17 +117,18 @@ export default {
           if (!response.data.ok) {
             this.$error(this, response.data.message)
           }
-        })
-      } catch (error) {
-        this.$error(this, error.message)
-      } finally {
-        this.fileUploading = false
-        this.cancelUploading()
-      }
+        } catch (error) {
+          this.$error(this, error.message)
+        } finally {
+          this.fileUploading = false
+          this.cancelUploading()
+        }
+      })
     },
     cancelUploading () {
       this.dropFiles = []
       this.isFileModalActive = false
+      location.reload()
     }
   }
 }

@@ -40,7 +40,7 @@ func botMiddleware(db *gorm.DB) gin.HandlerFunc {
 			var manager Manager
 			db.Where("ID = ?", costumer.ManagerID).First(&manager)
 
-			c.AsciiJSON(200, gin.H{
+			c.JSON(200, gin.H{
 				"ok":  true,
 				"did": "registered",
 				"data": []gin.H{
@@ -125,7 +125,16 @@ func botGetAnswer(db *gorm.DB) func(*gin.Context) {
 			}
 		}
 
-		c.AsciiJSON(200, gin.H{
+		if len(data) == 0 {
+			for _, qa := range qas {
+				if qa.Query == "<неопознанное>" {
+					data = append(data, qa)
+				}
+			}
+
+		}
+
+		c.JSON(200, gin.H{
 			"ok":       true,
 			"data":     data,
 			"manager":  manager,
@@ -142,9 +151,52 @@ func botUpdateCostumerName(db *gorm.DB) func(*gin.Context) {
 		costumer.Name = c.Query("name")
 		db.Save(costumer)
 
-		c.AsciiJSON(200, gin.H{
+		c.JSON(200, gin.H{
 			"ok":  true,
 			"did": "renamed",
 		})
+	}
+}
+
+func botGetMailing(db *gorm.DB) func(*gin.Context) {
+	return func(c *gin.Context) {
+		var mailing Mailing
+		db.Where("done = 0").First(&mailing)
+
+		if mailing.ID == 0 {
+			c.JSON(200, gin.H{
+				"ok":      false,
+				"message": "Рассылок нет",
+			})
+
+			return
+		}
+
+		var manager Manager
+		db.First(&manager, mailing.ManagerID)
+
+		var card QA
+		db.Where("id = ? and manager_id = ?", mailing.CardID, mailing.ManagerID).First(&card)
+
+		var costumers []Costumer
+		db.Model(&manager).Related(&costumers)
+
+		phones := make([]string, 0)
+		for _, costumer := range costumers {
+			if mailing.Status == "all" || costumer.Status == mailing.Status {
+				phones = append(phones, costumer.Phone)
+			}
+		}
+
+		c.JSON(200, gin.H{
+			"ok": true,
+			"data": gin.H{
+				"card":   card,
+				"phones": phones,
+			},
+		})
+
+		mailing.Done = true
+		db.Save(&mailing)
 	}
 }

@@ -20,13 +20,14 @@ func getGeneral(db *gorm.DB) func(*gin.Context) {
 		var admin Manager
 		db.First(&admin)
 
-		c.AsciiJSON(200, gin.H{
+		c.JSON(200, gin.H{
 			"ok": true,
 			"data": gin.H{
-				"name":         manager.Name,
-				"linkTemplate": manager.LinkTemplate,
-				"greeting":     manager.Greeting,
-				"link": fmt.Sprintf(
+				"Name":         manager.Name,
+				"LinkTemplate": manager.LinkTemplate,
+				"Greeting":     manager.Greeting,
+				"Phone":        manager.Phone,
+				"Link": fmt.Sprintf(
 					"https://wa.me/%s/?text=%s",
 					admin.Phone,
 					url.QueryEscape(strings.ReplaceAll(manager.LinkTemplate, "{name}", manager.Name)),
@@ -45,24 +46,29 @@ func patchGeneral(db *gorm.DB) func(*gin.Context) {
 
 		manager := iManager.(*Manager)
 
-		name, exist := c.GetPostForm("name")
+		name, exist := c.GetPostForm("Name")
 		if exist {
 			manager.Name = name
 		}
 
-		linkTemplate, exist := c.GetPostForm("linkTemplate")
+		linkTemplate, exist := c.GetPostForm("LinkTemplate")
 		if exist {
 			manager.LinkTemplate = linkTemplate
 		}
 
-		greeting, exist := c.GetPostForm("greeting")
+		greeting, exist := c.GetPostForm("Greeting")
 		if exist {
 			manager.Greeting = greeting
 		}
 
+		phone, exist := c.GetPostForm("Phone")
+		if exist {
+			manager.Phone = phone
+		}
+
 		db.Save(&manager)
 
-		c.AsciiJSON(200, gin.H{
+		c.JSON(200, gin.H{
 			"ok": true,
 		})
 	}

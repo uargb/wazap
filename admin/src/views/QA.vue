@@ -1,6 +1,6 @@
 <template>
   <section id="qa">
-    <navbar :username="username" :password="password" />
+    <navbar />
     <br />
     <div class="container">
       <div class="columns">
@@ -105,9 +105,6 @@ export default {
     password () { return this.$store.state.password }
   },
   mounted () {
-    if (this.username.length() == 0) {
-      this.$router.push('/')
-    }
     this.load()
   },
   methods: {

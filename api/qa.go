@@ -26,7 +26,7 @@ func getQA(db *gorm.DB) func(*gin.Context) {
 		if id != -1 {
 			for _, qa := range qas {
 				if qa.ID == uint(id) {
-					c.AsciiJSON(200, gin.H{
+					c.JSON(200, gin.H{
 						"ok":   true,
 						"data": qa,
 					})
@@ -34,7 +34,7 @@ func getQA(db *gorm.DB) func(*gin.Context) {
 				}
 			}
 		} else {
-			c.AsciiJSON(200, gin.H{
+			c.JSON(200, gin.H{
 				"ok":   true,
 				"data": qas,
 			})
@@ -54,7 +54,7 @@ func createQA(db *gorm.DB) func(*gin.Context) {
 		qa := QA{ManagerID: manager.ID}
 		db.Create(&qa)
 
-		c.AsciiJSON(200, gin.H{
+		c.JSON(200, gin.H{
 			"ok":   true,
 			"data": qa,
 		})
@@ -71,7 +71,7 @@ func patchQA(db *gorm.DB) func(*gin.Context) {
 
 		id, err := strconv.Atoi(c.Query("id"))
 		if err != nil {
-			c.AsciiJSON(200, gin.H{
+			c.JSON(200, gin.H{
 				"ok":      false,
 				"message": "invalid ID",
 			})
@@ -136,7 +136,7 @@ func patchQA(db *gorm.DB) func(*gin.Context) {
 			}
 		}
 
-		c.AsciiJSON(200, gin.H{
+		c.JSON(200, gin.H{
 			"ok": true,
 		})
 	}
@@ -152,7 +152,7 @@ func removeQA(db *gorm.DB) func(*gin.Context) {
 
 		id, err := strconv.Atoi(c.Query("id"))
 		if err != nil {
-			c.AsciiJSON(200, gin.H{
+			c.JSON(200, gin.H{
 				"ok":      false,
 				"message": "invalid ID",
 			})
@@ -160,7 +160,7 @@ func removeQA(db *gorm.DB) func(*gin.Context) {
 
 		db.Where("id = ? and manager_id = ?", id, manager.ID).Delete(&QA{})
 
-		c.AsciiJSON(200, gin.H{
+		c.JSON(200, gin.H{
 			"ok": true,
 		})
 	}
