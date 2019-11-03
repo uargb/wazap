@@ -110,6 +110,6 @@ async function start(client: Whatsapp) {
 
 
 create().then((client: Whatsapp) => {
-  // mailingUpdates(client)
+  mailingUpdates(client)
   start(client)
 }).catch((error: Error) => console.error(error))

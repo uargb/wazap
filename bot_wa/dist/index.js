@@ -218,7 +218,7 @@ function start(client) {
     });
 }
 sulla_hotfix_1.create().then(function (client) {
-    // mailingUpdates(client)
+    mailingUpdates(client);
     start(client);
 }).catch(function (error) { return console.error(error); });
 //# sourceMappingURL=index.js.map
