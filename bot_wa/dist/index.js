@@ -51,57 +51,71 @@ var axios_1 = __importDefault(require("axios"));
 var fs = __importStar(require("fs"));
 var mime = __importStar(require("mime-types"));
 var qs = require('qs');
+var apiBase = process.argv[0];
 function base64_encode(file) {
     var data = fs.readFileSync(file);
     return Buffer.from(data).toString('base64');
 }
-function apiBase(phone, url) {
-    return 'http://127.0.0.1:8090/bot/' + phone + '/' + url;
+function buildUrl(phone, url) {
+    return apiBase + '/bot/' + phone + '/' + url;
+}
+function sendCard(card, phone, client) {
+    return __awaiter(this, void 0, void 0, function () {
+        var mediaData, mediaName;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    mediaData = 'data:{mime};base64,{base64}';
+                    mediaName = '';
+                    if (card.Image) {
+                        mediaName = card.Image;
+                        mediaData = mediaData.replace('{mime}', mime.lookup(card.Image));
+                        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Image));
+                    }
+                    else if (card.Video) {
+                        mediaName = card.Video;
+                        mediaData = mediaData.replace('{mime}', mime.lookup(card.Video));
+                        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Video));
+                    }
+                    else if (card.Attachment) {
+                        mediaName = card.Attachment;
+                        mediaData = mediaData.replace('{mime}', mime.lookup(card.Attachment));
+                        mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Attachment));
+                    }
+                    if (!(mediaName.length > 0)) return [3 /*break*/, 2];
+                    return [4 /*yield*/, client.sendFile(phone + '@c.us', mediaData, mediaName, card.Text)];
+                case 1:
+                    _a.sent();
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, client.sendText(phone + '@c.us', card.Text)];
+                case 3:
+                    _a.sent();
+                    _a.label = 4;
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
 }
 function mailingUpdates(client) {
     return __awaiter(this, void 0, void 0, function () {
-        var response, card_1, mediaData_1, mediaName_1, error_1;
+        var response, card_1, error_1;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, 3, 4]);
-                    return [4 /*yield*/, axios_1.default.get(apiBase("0", 'mailing'))];
+                    return [4 /*yield*/, axios_1.default.get(buildUrl("0", 'mailing'))];
                 case 1:
                     response = _a.sent();
                     if (response.data.ok) {
                         card_1 = response.data.data.card;
-                        mediaData_1 = 'data:{mime};base64,{base64}';
-                        mediaName_1 = '';
-                        if (card_1.Image) {
-                            mediaName_1 = card_1.Image;
-                            mediaData_1 = mediaData_1.replace('{mime}', mime.lookup(card_1.Image));
-                            mediaData_1 = mediaData_1.replace('{base64}', base64_encode('./public/' + card_1.ManagerID + '-' + card_1.Image));
-                        }
-                        else if (card_1.Video) {
-                            mediaName_1 = card_1.Video;
-                            mediaData_1 = mediaData_1.replace('{mime}', mime.lookup(card_1.Video));
-                            mediaData_1 = mediaData_1.replace('{base64}', base64_encode('./public/' + card_1.ManagerID + '-' + card_1.Video));
-                        }
-                        else if (card_1.Attachment) {
-                            mediaName_1 = card_1.Attachment;
-                            mediaData_1 = mediaData_1.replace('{mime}', mime.lookup(card_1.Attachment));
-                            mediaData_1 = mediaData_1.replace('{base64}', base64_encode('./public/' + card_1.ManagerID + '-' + card_1.Attachment));
-                        }
                         response.data.data.phones.forEach(function (phone) { return __awaiter(_this, void 0, void 0, function () {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0:
-                                        if (!(mediaName_1.length > 0)) return [3 /*break*/, 2];
-                                        return [4 /*yield*/, client.sendFile(phone + '@c.us', mediaData_1, mediaName_1, card_1.Text)];
+                                    case 0: return [4 /*yield*/, sendCard(card_1, phone + '@c.us', client)];
                                     case 1:
                                         _a.sent();
-                                        return [3 /*break*/, 4];
-                                    case 2: return [4 /*yield*/, client.sendText(phone + '@c.us', card_1.Text)];
-                                    case 3:
-                                        _a.sent();
-                                        _a.label = 4;
-                                    case 4: return [2 /*return*/];
+                                        return [2 /*return*/];
                                 }
                             });
                         }); });
@@ -136,7 +150,7 @@ function start(client) {
                             if (message.body === undefined) {
                                 console.log(message);
                             }
-                            return [4 /*yield*/, axios_1.default.get(apiBase(phone, 'answer?message=' + encodeURIComponent(message.body)))];
+                            return [4 /*yield*/, axios_1.default.get(buildUrl(phone, 'answer?message=' + encodeURIComponent(message.body)))];
                         case 2:
                             response_1 = _a.sent();
                             if (!response_1.data.ok) return [3 /*break*/, 7];
@@ -144,7 +158,7 @@ function start(client) {
                             _a.label = 3;
                         case 3:
                             _a.trys.push([3, 5, , 6]);
-                            return [4 /*yield*/, axios_1.default.get(apiBase(phone, 'rename?name=' + encodeURIComponent(message.sender.pushname)))];
+                            return [4 /*yield*/, axios_1.default.get(buildUrl(phone, 'rename?name=' + encodeURIComponent(message.sender.pushname)))];
                         case 4:
                             _a.sent();
                             return [3 /*break*/, 6];
@@ -154,52 +168,27 @@ function start(client) {
                             return [3 /*break*/, 6];
                         case 6:
                             response_1.data.data.forEach(function (card) { return __awaiter(_this, void 0, void 0, function () {
-                                var mediaData, mediaName, fields, data, field;
+                                var fields, data, field;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
-                                        case 0:
-                                            mediaData = 'data:{mime};base64,{base64}';
-                                            mediaName = '';
-                                            if (card.Image) {
-                                                mediaName = card.Image;
-                                                mediaData = mediaData.replace('{mime}', mime.lookup(card.Image));
-                                                mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Image));
-                                            }
-                                            else if (card.Video) {
-                                                mediaName = card.Video;
-                                                mediaData = mediaData.replace('{mime}', mime.lookup(card.Video));
-                                                mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Video));
-                                            }
-                                            else if (card.Attachment) {
-                                                mediaName = card.Attachment;
-                                                mediaData = mediaData.replace('{mime}', mime.lookup(card.Attachment));
-                                                mediaData = mediaData.replace('{base64}', base64_encode('./public/' + card.ManagerID + '-' + card.Attachment));
-                                            }
-                                            if (!(mediaName.length > 0)) return [3 /*break*/, 2];
-                                            return [4 /*yield*/, client.sendFile(message.from, mediaData, mediaName, card.Text)];
+                                        case 0: return [4 /*yield*/, sendCard(card, phone, client)];
                                         case 1:
                                             _a.sent();
-                                            return [3 /*break*/, 4];
-                                        case 2: return [4 /*yield*/, client.sendText(message.from, card.Text)];
-                                        case 3:
-                                            _a.sent();
-                                            _a.label = 4;
-                                        case 4:
-                                            if (!card.NotifyManager) return [3 /*break*/, 6];
+                                            if (!card.NotifyManager) return [3 /*break*/, 3];
                                             fields = qs.parse(response_1.data.costumer.Fields);
                                             data = 'Имя: ' + response_1.data.costumer.Name + '\n';
                                             data += 'Телефон: ' + response_1.data.costumer.Phone + '\n';
                                             for (field in fields) {
                                                 if (field.includes('old')) {
-                                                    return [2 /*return*/];
+                                                    continue;
                                                 }
                                                 data += field + ': ' + fields[field] + '\n';
                                             }
-                                            return [4 /*yield*/, client.sendText(response_1.data.manager.Phone + '@c.us', data)];
-                                        case 5:
+                                            return [4 /*yield*/, sendCard(card, response_1.data.manager.Phone + '@c.us', client)];
+                                        case 2:
                                             _a.sent();
-                                            _a.label = 6;
-                                        case 6: return [2 /*return*/];
+                                            _a.label = 3;
+                                        case 3: return [2 /*return*/];
                                     }
                                 });
                             }); });
@@ -217,6 +206,7 @@ function start(client) {
         });
     });
 }
+console.log('starting client with API on ' + apiBase);
 sulla_hotfix_1.create().then(function (client) {
     mailingUpdates(client);
     start(client);

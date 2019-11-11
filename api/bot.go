@@ -74,53 +74,19 @@ func botGetAnswer(db *gorm.DB) func(*gin.Context) {
 		var qas []QA
 		db.Model(&manager).Related(&qas)
 
-		data := make([]interface{}, 0)
-
-		if len(costumer.Write) > 0 {
-			costumer.Next = 0
-			db.Save(costumer)
-		}
+		data := make([]QA, 0)
 
 		if costumer.Next > 0 {
 			for _, qa := range qas {
 				if qa.ID == costumer.Next {
 					data = append(data, qa)
-
-					if len(qa.Write) > 0 {
-						value := qa.Query
-						if len(value) == 0 {
-							value = message
-						}
-
-						if len(costumer.Fields) > 0 {
-							costumer.Fields = strings.ReplaceAll(costumer.Fields, qa.Write, ":old:"+qa.Write)
-							costumer.Fields += fmt.Sprintf("&%s=%s", qa.Write, value)
-						} else {
-							costumer.Fields += fmt.Sprintf("%s=%s", qa.Write, value)
-						}
-					}
-
-					if len(qa.NewStatus) > 0 {
-						costumer.Status = qa.NewStatus
-						db.Save(costumer)
-					}
-
 					break
 				}
 			}
-
-			costumer.Next = 0
-			db.Save(costumer)
 		} else {
 			for _, qa := range qas {
 				if strings.ToLower(qa.Query) == strings.ToLower(message) {
 					data = append(data, qa)
-
-					if len(qa.Next) > 0 {
-						next, _ := strconv.Atoi(qa.Next)
-						costumer.Next = uint(next)
-						db.Save(costumer)
-					}
 				}
 			}
 		}
@@ -131,7 +97,28 @@ func botGetAnswer(db *gorm.DB) func(*gin.Context) {
 					data = append(data, qa)
 				}
 			}
+		}
 
+		for _, qa := range data {
+			if len(qa.Next) > 0 {
+				next, _ := strconv.Atoi(qa.Next)
+				costumer.Next = uint(next)
+			} else {
+				costumer.Next = 0
+			}
+
+			if len(qa.Write) > 0 {
+				if len(costumer.Fields) > 0 {
+					costumer.Fields = strings.ReplaceAll(costumer.Fields, qa.Write, "old-:"+qa.Write)
+				}
+				costumer.Fields += fmt.Sprintf("%s=%s&", qa.Write, message)
+			}
+
+			if len(qa.NewStatus) > 0 {
+				costumer.Status = qa.NewStatus
+			}
+
+			db.Save(costumer)
 		}
 
 		c.JSON(200, gin.H{
